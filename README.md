@@ -101,16 +101,8 @@ el repo en Netlify y cada push a `main` se despliega solo.
 ## Migración del pedido original
 
 El pedido de Líder que existía antes de este cambio (schema de un solo
-pedido, key `state` en Blobs) se migra corriendo una vez, después del
-deploy:
-
-```bash
-curl -X POST https://<sitio>.netlify.app/api/migrate \
-  -H 'Content-Type: application/json' \
-  -d '{"confirm": true}'
-```
-
-Es no destructivo (no borra la key vieja) e idempotente (usa ids fijos, así
-que correrlo de nuevo no duplica nada). Una vez confirmado que el pedido
-aparece bien en la landing, se puede borrar
-`netlify/functions/migrate.mjs`.
+pedido, key `state` en Blobs) ya se migró al esquema nuevo como
+`orders/lider-2026-07-10/*`, preservando los checkboxes que ya estaban
+marcados. La función que hizo esa migración (`migrate.mjs`) se borró una vez
+confirmado que el pedido aparece bien en la landing; la key legacy `state`
+quedó sin usar en Blobs (no se borró, por las dudas).
