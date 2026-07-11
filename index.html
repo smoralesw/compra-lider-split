@@ -110,6 +110,36 @@
   .review-table button{border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;width:26px;height:26px;}
   #photo-add-row{margin-top:6px;border:1px dashed var(--border);background:#fff;border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer;color:#4b4536;}
 
+  .wishlist-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;}
+  .wishlist-title{font-weight:600;font-size:14px;color:var(--navy);margin-bottom:8px;}
+  .wishlist-items{list-style:none;margin:0 0 4px;padding:0;}
+  .wishlist-items li{
+    display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px;
+  }
+  .wishlist-items li:last-child{border-bottom:none;}
+  .wishlist-text{flex:1;min-width:0;}
+  .wishlist-person{
+    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--gold-dark);white-space:nowrap;
+  }
+  .wishlist-remove{border:none;background:none;cursor:pointer;color:#a89a7d;font-size:13px;padding:2px 4px;}
+  .wishlist-remove:hover{color:#dc2626;}
+  .wishlist-empty{color:var(--muted);font-size:13px;padding:6px 0;}
+  .wishlist-form{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .wishlist-form select{border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;background:#fff;color:var(--ink);}
+  .wishlist-form input[type=text]{
+    flex:1;min-width:140px;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;
+  }
+
+  .wishlist-import-list{
+    display:flex;flex-direction:column;gap:6px;margin-top:4px;max-height:140px;overflow-y:auto;
+    border:1px solid var(--border);border-radius:6px;padding:8px 10px;
+  }
+  .wishlist-import-list label{
+    display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--ink);margin:0;
+  }
+  .wishlist-import-list input[type=checkbox]{width:auto;flex-shrink:0;}
+
   @media (max-width:600px){
     .wrap{padding:16px;}
     .page-tabs-inner{padding:0 16px;gap:20px;}
@@ -140,6 +170,21 @@
       <p class="panel-subtitle">Pedidos compartidos · Sebastián, Ignacio y Diego</p>
       <button type="button" class="btn-gold" id="new-order-btn">+ Nuevo pedido</button>
     </div>
+
+    <div class="wishlist-card">
+      <div class="wishlist-title">🛒 Wishlist para la próxima compra</div>
+      <ul id="wishlist-items" class="wishlist-items"></ul>
+      <form id="wishlist-form" class="wishlist-form">
+        <select id="wishlist-person">
+          <option value="sebastian">Sebastián</option>
+          <option value="ignacio">Ignacio</option>
+          <option value="diego">Diego</option>
+        </select>
+        <input type="text" id="wishlist-input" placeholder="Agregar algo a comprar…" maxlength="200">
+        <button type="submit" class="btn-secondary">Agregar</button>
+      </form>
+    </div>
+
     <div id="orders-list"><p class="muted">Cargando pedidos…</p></div>
   </section>
 </div>
@@ -157,6 +202,12 @@
     <input id="manual-name" type="text" placeholder="Ej: Compra Jumbo semana 30">
     <label for="manual-date">Fecha</label>
     <input id="manual-date" type="date">
+
+    <div id="manual-wishlist-section" hidden>
+      <label>Importar de la wishlist</label>
+      <div id="manual-wishlist-list" class="wishlist-import-list"></div>
+    </div>
+
     <div class="dialog-actions">
       <button type="button" class="btn-secondary" data-close>Cancelar</button>
       <button type="button" class="btn-gold" id="manual-create">Crear pedido</button>
@@ -221,9 +272,12 @@
 const API_ORDERS = "/api/orders";
 const API_PARSE = "/api/parse-receipt";
 const API_PARSE_TEXT = "/api/parse-text";
+const API_WISHLIST = "/api/wishlist";
 const MAX_DIM = 1600;
+const PEOPLE_LABELS = {sebastian:"Sebastián", ignacio:"Ignacio", diego:"Diego"};
 
 let currentOrders = [];
+let currentWishlist = [];
 
 function fmt(n){
   return "$" + Math.round(n).toLocaleString("es-CL");
@@ -303,7 +357,7 @@ async function deleteOrder(btn){
   }
 }
 
-async function createOrder(name, date, items){
+async function createOrder(name, date, items, wishlistIdsToRemove){
   const payload = {
     name, date,
     items: items.map(it => ({
@@ -323,7 +377,99 @@ async function createOrder(name, date, items){
     alert(data.error || "No se pudo crear el pedido.");
     return;
   }
+  if(wishlistIdsToRemove && wishlistIdsToRemove.length){
+    await Promise.all(wishlistIdsToRemove.map(id =>
+      fetch(API_WISHLIST + "/" + encodeURIComponent(id), {method: "DELETE"}).catch(()=>{})
+    ));
+  }
   window.location.href = "pedido.html?id=" + encodeURIComponent(data.id);
+}
+
+// --- wishlist ---
+
+async function loadWishlist(){
+  try{
+    const res = await fetch(API_WISHLIST, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const items = await res.json();
+    currentWishlist = Array.isArray(items) ? items : [];
+  }catch(e){
+    currentWishlist = [];
+  }
+  renderWishlist();
+}
+
+function renderWishlist(){
+  const list = document.getElementById("wishlist-items");
+  if(!currentWishlist.length){
+    list.innerHTML = '<li class="wishlist-empty">Todavía no hay nada anotado.</li>';
+    return;
+  }
+  const sorted = [...currentWishlist].sort((a,b)=> (a.createdAt || "").localeCompare(b.createdAt || ""));
+  list.innerHTML = sorted.map(it => `
+    <li>
+      <span class="wishlist-text">${escapeHtml(it.text)}</span>
+      <span class="wishlist-person">${escapeHtml(PEOPLE_LABELS[it.addedBy] || it.addedBy)}</span>
+      <button type="button" class="wishlist-remove" data-id="${escapeHtml(it.id)}" title="Quitar">✕</button>
+    </li>
+  `).join("");
+  list.querySelectorAll(".wishlist-remove").forEach(btn => {
+    btn.addEventListener("click", () => removeWishlistItem(btn.dataset.id));
+  });
+}
+
+async function removeWishlistItem(id){
+  try{
+    await fetch(API_WISHLIST + "/" + encodeURIComponent(id), {method: "DELETE"});
+    await loadWishlist();
+  }catch(e){
+    alert("No se pudo quitar el item (revisá conexión).");
+  }
+}
+
+document.getElementById("wishlist-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("wishlist-input");
+  const text = input.value.trim();
+  const addedBy = document.getElementById("wishlist-person").value;
+  if(!text) return;
+  const btn = e.target.querySelector("button[type=submit]");
+  btn.disabled = true;
+  try{
+    const res = await fetch(API_WISHLIST, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text, addedBy}),
+    });
+    if(!res.ok){
+      const data = await res.json().catch(()=>({}));
+      alert(data.error || "No se pudo agregar el item.");
+      return;
+    }
+    input.value = "";
+    await loadWishlist();
+  }catch(err){
+    alert("No se pudo agregar (revisá conexión).");
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+function renderManualWishlistImport(){
+  const section = document.getElementById("manual-wishlist-section");
+  const list = document.getElementById("manual-wishlist-list");
+  if(!currentWishlist.length){
+    section.hidden = true;
+    list.innerHTML = "";
+    return;
+  }
+  section.hidden = false;
+  list.innerHTML = currentWishlist.map(it => `
+    <label>
+      <input type="checkbox" value="${escapeHtml(it.id)}">
+      ${escapeHtml(it.text)} <span class="wishlist-person">(${escapeHtml(PEOPLE_LABELS[it.addedBy] || it.addedBy)})</span>
+    </label>
+  `).join("");
 }
 
 // --- page tabs (Cuentas / Pedidos) ---
@@ -347,6 +493,7 @@ document.getElementById("new-order-btn").addEventListener("click", () => {
   document.getElementById("manual-date").value = today;
   document.getElementById("photo-date").value = today;
   document.getElementById("paste-date").value = today;
+  renderManualWishlistImport();
   dialog.showModal();
 });
 
@@ -398,7 +545,14 @@ document.getElementById("manual-create").addEventListener("click", async () => {
     alert("Completá nombre y fecha.");
     return;
   }
-  await createOrder(name, date, []);
+  const checkedIds = Array.from(
+    document.querySelectorAll('#manual-wishlist-list input[type=checkbox]:checked')
+  ).map(cb => cb.value);
+  const importedItems = checkedIds.map(id => {
+    const wi = currentWishlist.find(w => w.id === id);
+    return {id: crypto.randomUUID(), name: wi ? wi.text : "Producto", qty: 1, unitPrice: 0};
+  });
+  await createOrder(name, date, importedItems, checkedIds);
 });
 
 // --- photo creation ---
@@ -587,6 +741,7 @@ document.getElementById("paste-create").addEventListener("click", async () => {
 });
 
 loadOrders();
+loadWishlist();
 </script>
 </body>
 </html>

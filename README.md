@@ -11,10 +11,10 @@ misma selección en tiempo real.
 ## Estructura
 
 - `index.html` — **landing**: hero con el logo y dos pestañas, **Cuentas**
-  (gastos mensuales del hogar — placeholder por ahora) y **Pedidos** (lista
-  de pedidos con nombre/fecha/total, crear uno nuevo a mano, subiendo una
-  foto o pegando texto — todo interpretado con IA, ver más abajo — y
-  eliminar pedidos existentes).
+  (gastos mensuales del hogar — placeholder por ahora) y **Pedidos** (wishlist
+  compartida + lista de pedidos con nombre/fecha/total, crear uno nuevo a
+  mano, subiendo una foto o pegando texto — todo interpretado con IA, ver
+  más abajo — y eliminar pedidos existentes).
 - `pedido.html` — vista de detalle de un pedido puntual, parametrizada por
   `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Acá vive la tabla de
   productos con checkboxes, los totales por persona, la edición de
@@ -30,6 +30,8 @@ misma selección en tiempo real.
 - `netlify/functions/parse-text.mjs` — recibe un texto pegado (lista, correo
   de confirmación, carrito copiado, etc.) y usa Claude para extraer los
   productos, mismo patrón que `parse-receipt.mjs` pero sin imagen.
+- `netlify/functions/wishlist.mjs` — CRUD simple de la wishlist compartida
+  (ver esquema y endpoints abajo).
 
 ## Esquema de datos (Netlify Blobs, store `compra-lider`)
 
@@ -41,6 +43,7 @@ misma selección en tiempo real.
   agregar/editar/borrar filas no desalinee los checkboxes de nadie.
 - `orders/<id>/state` — objeto keyeado por ese mismo `id` de producto:
   `{[itemId]: {sebastian, ignacio, diego}}`.
+- `wishlist` — array compartido: `[{id, text, addedBy, createdAt}]`.
 
 ## Endpoints
 
@@ -60,6 +63,11 @@ misma selección en tiempo real.
 - `POST /api/parse-text` — body `{text: "<pedido pegado>"}`, devuelve
   `{items: [{name, qty, unitPrice}]}` extraídos por Claude. Misma
   dependencia de `ANTHROPIC_API_KEY` que `/api/parse-receipt`.
+- `GET /api/wishlist` — lista completa de la wishlist.
+- `POST /api/wishlist` — agrega un item. Body: `{text, addedBy}` (`addedBy`
+  debe ser `sebastian`, `ignacio` o `diego`).
+- `DELETE /api/wishlist/:id` — quita un item (a mano, o automático al
+  importarlo a un pedido nuevo).
 
 ## Cómo funciona la sincronización de checkboxes
 
@@ -88,6 +96,14 @@ de las funciones de Netlify y para bajar costo/latencia de la llamada a la
 API. En ambos casos (foto o texto pegado), los productos que devuelve Claude
 se muestran en una tabla editable antes de guardar el pedido, así se pueden
 corregir errores de lectura.
+
+## Wishlist
+
+Lista compartida (dentro de la pestaña Pedidos) donde cualquiera anota cosas
+para la próxima compra, indicando quién lo pidió. Al crear un pedido manual,
+se pueden tildar items de la wishlist para agregarlos directo como productos
+del pedido nuevo (con cantidad 1 y precio $0, a completar después); al
+guardar el pedido, esos items se sacan automáticamente de la wishlist.
 
 ## Desarrollo local
 
