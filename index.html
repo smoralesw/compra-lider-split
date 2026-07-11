@@ -95,9 +95,11 @@
   }
   .tab-btn.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600;}
   .tab-panel label{display:block;font-size:12.5px;color:#4b4536;font-weight:600;margin:10px 0 4px;}
-  .tab-panel input[type=text], .tab-panel input[type=date], .tab-panel input[type=file]{
+  .tab-panel input[type=text], .tab-panel input[type=date], .tab-panel input[type=file], .tab-panel textarea{
     width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;
+    font-family:inherit;
   }
+  .tab-panel textarea{resize:vertical;}
   .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
 
   .review-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}
@@ -147,6 +149,7 @@
   <div class="tabs">
     <button type="button" class="tab-btn active" data-tab="manual">Manual</button>
     <button type="button" class="tab-btn" data-tab="photo">Desde foto</button>
+    <button type="button" class="tab-btn" data-tab="paste">Pegar texto</button>
   </div>
 
   <div id="tab-manual" class="tab-panel">
@@ -184,11 +187,40 @@
       <button type="button" class="btn-gold" id="photo-create" disabled>Guardar pedido</button>
     </div>
   </div>
+
+  <div id="tab-paste" class="tab-panel" hidden>
+    <label for="paste-input">Pegá el pedido (lista, correo de confirmación, carrito copiado, etc.)</label>
+    <textarea id="paste-input" rows="6" placeholder="Ej:&#10;Leche Entera 1L  x2  $990&#10;Pan Hallulla 9 un  $2.490"></textarea>
+    <div class="dialog-actions" style="justify-content:flex-start;margin-top:8px;">
+      <button type="button" class="btn-secondary" id="paste-analyze">Analizar texto</button>
+    </div>
+    <p class="muted" id="paste-status"></p>
+
+    <div id="paste-review" hidden>
+      <table class="review-table">
+        <thead>
+          <tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th></th></tr>
+        </thead>
+        <tbody id="paste-items-body"></tbody>
+      </table>
+      <button type="button" id="paste-add-row">+ Agregar fila</button>
+      <label for="paste-name">Nombre del pedido</label>
+      <input id="paste-name" type="text" placeholder="Ej: Compra Jumbo semana 30">
+      <label for="paste-date">Fecha</label>
+      <input id="paste-date" type="date">
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-secondary" data-close>Cancelar</button>
+      <button type="button" class="btn-gold" id="paste-create" disabled>Guardar pedido</button>
+    </div>
+  </div>
 </dialog>
 
 <script>
 const API_ORDERS = "/api/orders";
 const API_PARSE = "/api/parse-receipt";
+const API_PARSE_TEXT = "/api/parse-text";
 const MAX_DIM = 1600;
 
 let currentOrders = [];
@@ -314,6 +346,7 @@ document.getElementById("new-order-btn").addEventListener("click", () => {
   const today = todayLocalISODate();
   document.getElementById("manual-date").value = today;
   document.getElementById("photo-date").value = today;
+  document.getElementById("paste-date").value = today;
   dialog.showModal();
 });
 
@@ -331,10 +364,18 @@ dialog.addEventListener("close", () => {
   document.getElementById("photo-review").hidden = true;
   document.getElementById("photo-create").disabled = true;
   photoItems = [];
+  document.getElementById("paste-input").value = "";
+  document.getElementById("paste-name").value = "";
+  document.getElementById("paste-date").value = "";
+  document.getElementById("paste-status").textContent = "";
+  document.getElementById("paste-review").hidden = true;
+  document.getElementById("paste-create").disabled = true;
+  pasteItems = [];
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   document.querySelector('.tab-btn[data-tab="manual"]').classList.add("active");
   document.getElementById("tab-manual").hidden = false;
   document.getElementById("tab-photo").hidden = true;
+  document.getElementById("tab-paste").hidden = true;
 });
 
 document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -344,6 +385,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById("tab-manual").hidden = tab !== "manual";
     document.getElementById("tab-photo").hidden = tab !== "photo";
+    document.getElementById("tab-paste").hidden = tab !== "paste";
   });
 });
 
@@ -462,6 +504,86 @@ document.getElementById("photo-create").addEventListener("click", async () => {
     return;
   }
   await createOrder(name, date, photoItems);
+});
+
+// --- paste-text creation ---
+
+let pasteItems = [];
+
+function renderPasteItems(){
+  const tbody = document.getElementById("paste-items-body");
+  tbody.innerHTML = pasteItems.map((it, idx) => `
+    <tr>
+      <td><input type="text" value="${escapeHtml(it.name)}" data-field="name" data-idx="${idx}"></td>
+      <td><input type="number" min="1" step="1" value="${it.qty}" data-field="qty" data-idx="${idx}"></td>
+      <td><input type="number" min="0" step="1" value="${it.unitPrice}" data-field="unitPrice" data-idx="${idx}"></td>
+      <td><button type="button" data-remove="${idx}" title="Borrar fila">✕</button></td>
+    </tr>
+  `).join("");
+
+  tbody.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const idx = Number(inp.dataset.idx);
+      const field = inp.dataset.field;
+      pasteItems[idx][field] = field === "name" ? inp.value : Number(inp.value);
+    });
+  });
+  tbody.querySelectorAll("[data-remove]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      pasteItems.splice(Number(btn.dataset.remove), 1);
+      renderPasteItems();
+    });
+  });
+}
+
+document.getElementById("paste-add-row").addEventListener("click", () => {
+  pasteItems.push({id: crypto.randomUUID(), name: "", qty: 1, unitPrice: 0});
+  renderPasteItems();
+});
+
+document.getElementById("paste-analyze").addEventListener("click", async () => {
+  const text = document.getElementById("paste-input").value.trim();
+  const statusEl = document.getElementById("paste-status");
+  if(!text){
+    statusEl.textContent = "Pegá primero el texto del pedido.";
+    return;
+  }
+  document.getElementById("paste-review").hidden = true;
+  document.getElementById("paste-create").disabled = true;
+  statusEl.textContent = "Analizando con IA…";
+  try{
+    const res = await fetch(API_PARSE_TEXT, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text}),
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      statusEl.textContent = data.error || "No se pudo analizar el texto.";
+      return;
+    }
+    pasteItems = (data.items || []).map(it => ({
+      id: crypto.randomUUID(), name: it.name, qty: it.qty, unitPrice: it.unitPrice,
+    }));
+    statusEl.textContent = pasteItems.length
+      ? `${pasteItems.length} producto(s) detectado(s). Revisá antes de guardar.`
+      : "No se detectaron productos. Podés agregarlos a mano.";
+    renderPasteItems();
+    document.getElementById("paste-review").hidden = false;
+    document.getElementById("paste-create").disabled = false;
+  }catch(err){
+    statusEl.textContent = "Error al analizar el texto.";
+  }
+});
+
+document.getElementById("paste-create").addEventListener("click", async () => {
+  const name = document.getElementById("paste-name").value.trim() || "Pedido sin nombre";
+  const date = document.getElementById("paste-date").value || todayLocalISODate();
+  if(!pasteItems.length){
+    alert("Agregá al menos un producto antes de guardar.");
+    return;
+  }
+  await createOrder(name, date, pasteItems);
 });
 
 loadOrders();

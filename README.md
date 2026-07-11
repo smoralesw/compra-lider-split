@@ -10,10 +10,11 @@ misma selección en tiempo real.
 
 ## Estructura
 
-- `index.html` — **landing**: hero con el logo, lista todos los pedidos
-  (nombre, fecha, total), permite crear uno nuevo (a mano o subiendo una
-  foto del carrito/boleta, interpretada con IA, ver más abajo) y eliminar
-  pedidos existentes.
+- `index.html` — **landing**: hero con el logo y dos pestañas, **Cuentas**
+  (gastos mensuales del hogar — placeholder por ahora) y **Pedidos** (lista
+  de pedidos con nombre/fecha/total, crear uno nuevo a mano, subiendo una
+  foto o pegando texto — todo interpretado con IA, ver más abajo — y
+  eliminar pedidos existentes).
 - `pedido.html` — vista de detalle de un pedido puntual, parametrizada por
   `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Acá vive la tabla de
   productos con checkboxes, los totales por persona, la edición de
@@ -26,6 +27,9 @@ misma selección en tiempo real.
   datos y endpoints abajo).
 - `netlify/functions/parse-receipt.mjs` — recibe una foto y usa la API de
   Anthropic (Claude, con visión) para extraer los productos automáticamente.
+- `netlify/functions/parse-text.mjs` — recibe un texto pegado (lista, correo
+  de confirmación, carrito copiado, etc.) y usa Claude para extraer los
+  productos, mismo patrón que `parse-receipt.mjs` pero sin imagen.
 
 ## Esquema de datos (Netlify Blobs, store `compra-lider`)
 
@@ -53,6 +57,9 @@ misma selección en tiempo real.
   `{items: [{name, qty, unitPrice}]}` extraídos de la foto por Claude.
   Requiere `ANTHROPIC_API_KEY` configurada (ver abajo); si falta, responde
   con un error explicando qué falta, sin afectar el resto de la app.
+- `POST /api/parse-text` — body `{text: "<pedido pegado>"}`, devuelve
+  `{items: [{name, qty, unitPrice}]}` extraídos por Claude. Misma
+  dependencia de `ANTHROPIC_API_KEY` que `/api/parse-receipt`.
 
 ## Cómo funciona la sincronización de checkboxes
 
@@ -68,18 +75,19 @@ misma selección en tiempo real.
   llegue al servidor (last-write-wins). Para el uso previsto (3 personas
   coordinando una compra puntual) no debería ser un problema real.
 
-## Cargar un pedido por foto
+## Cargar un pedido por foto o pegando texto
 
-Requiere una variable de entorno `ANTHROPIC_API_KEY` configurada en Netlify
-(Site settings → Environment variables). Sin esa key, todo el resto de la
-app funciona igual — solo falla, con un mensaje claro, la extracción
-automática de productos desde una foto.
+Ambas vías requieren una variable de entorno `ANTHROPIC_API_KEY` configurada
+en Netlify (Site settings → Environment variables). Sin esa key, todo el
+resto de la app funciona igual — solo falla, con un mensaje claro, la
+extracción automática de productos.
 
 La imagen se reduce y comprime en el navegador (`<canvas>`, máx ~1600px,
 JPEG calidad 0.8) antes de subirla, para no pegar contra límites de tamaño
 de las funciones de Netlify y para bajar costo/latencia de la llamada a la
-API. Los productos que devuelve Claude se muestran en una tabla editable
-antes de guardar el pedido, así se pueden corregir errores de lectura.
+API. En ambos casos (foto o texto pegado), los productos que devuelve Claude
+se muestran en una tabla editable antes de guardar el pedido, así se pueden
+corregir errores de lectura.
 
 ## Desarrollo local
 
