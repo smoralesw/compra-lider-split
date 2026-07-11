@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Compra Líder - División de gastos</title>
 <style>
   :root{
@@ -20,7 +21,13 @@
   .wrap{max-width:980px;margin:0 auto;}
   h1{font-size:22px;margin:0 0 4px;}
   .subtitle{color:#64748b;font-size:14px;margin:0 0 4px;}
-  .sync-status{font-size:12px;color:#94a3b8;margin:0 0 20px;}
+  .sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 20px;flex-wrap:wrap;}
+  .sync-status{font-size:12px;color:#94a3b8;margin:0;}
+  .copy-btn{
+    border:1px solid var(--border);background:#fff;border-radius:6px;
+    padding:6px 10px;font-size:12px;color:#334155;cursor:pointer;white-space:nowrap;
+  }
+  .copy-btn:hover{background:#f1f5f9;}
 
   .summary{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -35,8 +42,10 @@
   .card.sin .value{color:var(--sin);}
   .card.total .value{color:#0f172a;}
 
-  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:#fff;}
+  table{width:100%;min-width:640px;border-collapse:collapse;}
   thead th{
+    position:sticky;top:0;
     background:#f1f5f9;font-size:12px;text-transform:uppercase;letter-spacing:.03em;
     color:#64748b;text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);
   }
@@ -62,7 +71,15 @@
 
   @media print{
     footer{display:none;}
+    .copy-btn{display:none;}
     body{background:#fff;padding:0;}
+  }
+
+  @media (max-width:600px){
+    body{padding:12px;}
+    h1{font-size:19px;}
+    .card{padding:10px 12px;}
+    .card .value{font-size:17px;}
   }
 </style>
 </head>
@@ -70,7 +87,10 @@
 <div class="wrap">
   <h1>Compra Líder — Detalle y división de gastos</h1>
   <p class="subtitle">Pedido a nombre de Sebastián Morales · Carmencita 246, Las Condes · Entrega: mañana 10:00–12:00 · 34 productos</p>
-  <p class="sync-status" id="sync-status">Cargando selección compartida…</p>
+  <div class="sync-row">
+    <p class="sync-status" id="sync-status">Cargando selección compartida…</p>
+    <button type="button" class="copy-btn" id="copy-btn">📋 Copiar resumen</button>
+  </div>
 
   <div class="summary">
     <div class="card sebastian"><div class="label">Sebastián</div><div class="value" id="tot-sebastian">$0</div></div>
@@ -80,30 +100,32 @@
     <div class="card total"><div class="label">Total compra</div><div class="value" id="tot-total">$0</div></div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Producto</th>
-        <th class="center">Cant.</th>
-        <th style="text-align:right;">Total</th>
-        <th class="center" style="color:var(--sebastian);">Sebastián</th>
-        <th class="center" style="color:var(--ignacio);">Ignacio</th>
-        <th class="center" style="color:var(--diego);">Diego</th>
-        <th class="center">Todos</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-    <tfoot>
-      <tr>
-        <td colspan="2">Total</td>
-        <td class="money" id="foot-total">$0</td>
-        <td class="center" id="foot-sebastian">$0</td>
-        <td class="center" id="foot-ignacio">$0</td>
-        <td class="center" id="foot-diego">$0</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="center">Cant.</th>
+          <th style="text-align:right;">Total</th>
+          <th class="center" style="color:var(--sebastian);">Sebastián</th>
+          <th class="center" style="color:var(--ignacio);">Ignacio</th>
+          <th class="center" style="color:var(--diego);">Diego</th>
+          <th class="center">Todos</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Total</td>
+          <td class="money" id="foot-total">$0</td>
+          <td class="center" id="foot-sebastian">$0</td>
+          <td class="center" id="foot-ignacio">$0</td>
+          <td class="center" id="foot-diego">$0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 
   <footer>Las filas en rojo todavía no tienen asignación. La selección se guarda en el servidor y se sincroniza entre los tres cada pocos segundos.</footer>
 </div>
@@ -166,11 +188,17 @@ function setSyncStatus(text){
   document.getElementById("sync-status").textContent = text;
 }
 
+function isValidState(data){
+  return Array.isArray(data) && data.length === ITEMS.length &&
+    data.every(row => row && typeof row === "object" &&
+      PEOPLE.every(p => typeof row[p] === "boolean"));
+}
+
 async function fetchState(){
   const res = await fetch(API_URL, {cache:"no-store"});
   if(!res.ok) throw new Error("HTTP " + res.status);
   const data = await res.json();
-  return (data && Array.isArray(data) && data.length === ITEMS.length) ? data : null;
+  return isValidState(data) ? data : null;
 }
 
 async function pushState(){
@@ -256,20 +284,28 @@ function render(){
   computeTotals();
 }
 
-function computeTotals(){
+function getTotals(){
   let totals = {sebastian:0, ignacio:0, diego:0, sin:0};
   let grandTotal = 0;
+  const unassigned = [];
 
   ITEMS.forEach((item, idx)=>{
     grandTotal += item.total;
     const assigned = PEOPLE.filter(p=>state[idx][p]);
     if(assigned.length === 0){
       totals.sin += item.total;
+      unassigned.push(item.n);
     } else {
       const share = item.total / assigned.length;
       assigned.forEach(p=> totals[p] += share);
     }
   });
+
+  return {totals, grandTotal, unassigned};
+}
+
+function computeTotals(){
+  const {totals, grandTotal} = getTotals();
 
   document.getElementById("tot-sebastian").textContent = fmt(totals.sebastian);
   document.getElementById("tot-ignacio").textContent = fmt(totals.ignacio);
@@ -282,6 +318,39 @@ function computeTotals(){
   document.getElementById("foot-ignacio").textContent = fmt(totals.ignacio);
   document.getElementById("foot-diego").textContent = fmt(totals.diego);
 }
+
+const PEOPLE_LABELS = {sebastian:"Sebastián", ignacio:"Ignacio", diego:"Diego"};
+
+function buildSummaryText(){
+  const {totals, grandTotal, unassigned} = getTotals();
+
+  const lines = ["🧾 Compra Líder — resumen"];
+  PEOPLE.forEach(p=> lines.push(`${PEOPLE_LABELS[p]}: ${fmt(totals[p])}`));
+  if(totals.sin > 0) lines.push(`Sin asignar: ${fmt(totals.sin)}`);
+  lines.push(`Total: ${fmt(grandTotal)}`);
+
+  if(unassigned.length){
+    lines.push("");
+    lines.push(`⚠️ ${unassigned.length} producto(s) sin asignar:`);
+    unassigned.forEach(n=> lines.push(`- ${n}`));
+  }
+
+  return lines.join("\n");
+}
+
+async function copySummary(){
+  const btn = document.getElementById("copy-btn");
+  const original = btn.textContent;
+  try{
+    await navigator.clipboard.writeText(buildSummaryText());
+    btn.textContent = "✅ Copiado";
+  }catch(e){
+    btn.textContent = "⚠️ No se pudo copiar";
+  }
+  setTimeout(()=>{ btn.textContent = original; }, 2000);
+}
+
+document.getElementById("copy-btn").addEventListener("click", copySummary);
 
 async function init(){
   render(); // paint with defaults immediately
@@ -296,7 +365,10 @@ async function init(){
   }catch(e){
     setSyncStatus("No se encontró selección guardada en el servidor todavía (o falta desplegar la función /api/state)");
   }
-  setInterval(pollState, POLL_MS);
+  setInterval(async ()=>{
+    await pushState(); // retry any change that failed to save earlier
+    await pollState();
+  }, POLL_MS);
 }
 
 init();
