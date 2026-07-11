@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pedido - Compra Split</title>
+<style>
+  :root{
+    --sebastian:#2563eb;
+    --ignacio:#059669;
+    --diego:#d97706;
+    --sin:#dc2626;
+    --bg:#f8fafc;
+    --border:#e2e8f0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    margin:0; padding:24px; background:var(--bg); color:#0f172a;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+  .back-link{font-size:12.5px;color:#64748b;text-decoration:none;display:inline-block;margin-bottom:8px;}
+  .back-link:hover{color:#334155;}
+  .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  h1{font-size:22px;margin:0 0 4px;}
+  .subtitle{color:#64748b;font-size:14px;margin:0 0 4px;}
+  .sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 20px;flex-wrap:wrap;}
+  .sync-status{font-size:12px;color:#94a3b8;margin:0;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .copy-btn, .edit-btn{
+    border:1px solid var(--border);background:#fff;border-radius:6px;
+    padding:6px 10px;font-size:12px;color:#334155;cursor:pointer;white-space:nowrap;
+  }
+  .copy-btn:hover, .edit-btn:hover{background:#f1f5f9;}
+
+  .summary{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;margin-bottom:20px;
+  }
+  .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .card .label{font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .card .value{font-size:20px;font-weight:700;margin-top:4px;}
+  .card.sebastian .value{color:var(--sebastian);}
+  .card.ignacio .value{color:var(--ignacio);}
+  .card.diego .value{color:var(--diego);}
+  .card.sin .value{color:var(--sin);}
+  .card.total .value{color:#0f172a;}
+
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:#fff;}
+  table{width:100%;min-width:640px;border-collapse:collapse;}
+  thead th{
+    position:sticky;top:0;
+    background:#f1f5f9;font-size:12px;text-transform:uppercase;letter-spacing:.03em;
+    color:#64748b;text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);
+  }
+  th.center, td.center{text-align:center;}
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr.unassigned{background:#fef2f2;}
+  td{padding:9px 8px;font-size:13.5px;vertical-align:middle;}
+  td.name{font-weight:500;}
+  td.money{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  input[type=checkbox]{width:17px;height:17px;cursor:pointer;}
+  .todos-btn{
+    border:1px solid var(--border);background:#fff;border-radius:6px;
+    width:26px;height:26px;cursor:pointer;font-size:13px;color:#334155;
+  }
+  .todos-btn:hover{background:#f1f5f9;}
+  .split-note{font-size:11px;color:#94a3b8;display:block;margin-top:2px;}
+
+  tfoot td{padding:10px 8px;font-weight:700;font-size:13.5px;border-top:2px solid #cbd5e1;}
+
+  footer{margin-top:18px;font-size:12px;color:#94a3b8;text-align:center;}
+
+  dialog{
+    border:none;border-radius:12px;padding:20px;width:min(560px,90vw);
+    box-shadow:0 20px 40px rgba(15,23,42,.2);
+  }
+  dialog::backdrop{background:rgba(15,23,42,.45);}
+  dialog h2{margin:0 0 14px;font-size:17px;}
+  .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+  .btn-primary{
+    background:#2563eb;color:#fff;border:none;border-radius:8px;
+    padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .btn-primary:hover{background:#1d4ed8;}
+  .btn-secondary{
+    background:#fff;color:#334155;border:1px solid var(--border);border-radius:8px;
+    padding:10px 16px;font-size:14px;cursor:pointer;
+  }
+  .btn-secondary:hover{background:#f1f5f9;}
+
+  .review-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px;}
+  .review-table th{text-align:left;color:#64748b;font-size:11.5px;text-transform:uppercase;padding:4px 4px;position:static;}
+  .review-table td{padding:3px 4px;}
+  .review-table input[type=text], .review-table input[type=number]{
+    width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:5px;font-size:13px;
+  }
+  .review-table button{border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;width:26px;height:26px;}
+  #edit-add-row{margin-top:6px;border:1px dashed var(--border);background:#fff;border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer;color:#475569;}
+
+  @media print{
+    footer{display:none;}
+    .copy-btn, .edit-btn, .back-link{display:none;}
+    body{background:#fff;padding:0;}
+  }
+
+  @media (max-width:600px){
+    body{padding:12px;}
+    h1{font-size:19px;}
+    .card{padding:10px 12px;}
+    .card .value{font-size:17px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="index.html">← Pedidos</a>
+  <div class="title-row">
+    <div>
+      <h1 id="order-title">Cargando…</h1>
+      <p class="subtitle" id="order-subtitle"></p>
+    </div>
+  </div>
+
+  <div class="sync-row">
+    <p class="sync-status" id="sync-status">Cargando pedido…</p>
+    <div class="actions">
+      <button type="button" class="edit-btn" id="edit-btn">✏️ Editar productos</button>
+      <button type="button" class="copy-btn" id="copy-btn">📋 Copiar resumen</button>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="card sebastian"><div class="label">Sebastián</div><div class="value" id="tot-sebastian">$0</div></div>
+    <div class="card ignacio"><div class="label">Ignacio</div><div class="value" id="tot-ignacio">$0</div></div>
+    <div class="card diego"><div class="label">Diego</div><div class="value" id="tot-diego">$0</div></div>
+    <div class="card sin"><div class="label">Sin asignar</div><div class="value" id="tot-sin">$0</div></div>
+    <div class="card total"><div class="label">Total pedido</div><div class="value" id="tot-total">$0</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="center">Cant.</th>
+          <th style="text-align:right;">Total</th>
+          <th class="center" style="color:var(--sebastian);">Sebastián</th>
+          <th class="center" style="color:var(--ignacio);">Ignacio</th>
+          <th class="center" style="color:var(--diego);">Diego</th>
+          <th class="center">Todos</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Total</td>
+          <td class="money" id="foot-total">$0</td>
+          <td class="center" id="foot-sebastian">$0</td>
+          <td class="center" id="foot-ignacio">$0</td>
+          <td class="center" id="foot-diego">$0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <footer>Las filas en rojo todavía no tienen asignación. La selección se guarda en el servidor y se sincroniza entre los tres cada pocos segundos.</footer>
+</div>
+
+<dialog id="edit-items-dialog">
+  <h2>Editar productos</h2>
+  <table class="review-table">
+    <thead>
+      <tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th></th></tr>
+    </thead>
+    <tbody id="edit-items-body"></tbody>
+  </table>
+  <button type="button" id="edit-add-row">+ Agregar fila</button>
+  <div class="dialog-actions">
+    <button type="button" class="btn-secondary" data-close>Cancelar</button>
+    <button type="button" class="btn-primary" id="edit-save">Guardar productos</button>
+  </div>
+</dialog>
+
+<script>
+const PEOPLE = ["sebastian","ignacio","diego"];
+const PEOPLE_LABELS = {sebastian:"Sebastián", ignacio:"Ignacio", diego:"Diego"};
+const POLL_MS = 5000;
+
+const params = new URLSearchParams(location.search);
+const orderId = params.get("id");
+const API_ORDER = "/api/orders/" + encodeURIComponent(orderId || "");
+
+let orderMeta = null;
+let items = [];
+let state = {};
+let saving = false;
+let lastSavedStateJSON = "{}";
+
+function fmt(n){
+  return "$" + Math.round(n).toLocaleString("es-CL");
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function setSyncStatus(text){
+  document.getElementById("sync-status").textContent = text;
+}
+
+function isValidState(data){
+  if(!data || typeof data !== "object" || Array.isArray(data)) return false;
+  const validIds = new Set(items.map(it => it.id));
+  return Object.keys(data).every(id =>
+    validIds.has(id) && data[id] && typeof data[id] === "object" &&
+    PEOPLE.every(p => typeof data[id][p] === "boolean")
+  );
+}
+
+async function fetchRemoteState(){
+  const res = await fetch(API_ORDER + "/state", {cache:"no-store"});
+  if(!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  return isValidState(data) ? data : null;
+}
+
+async function pushState(){
+  const body = JSON.stringify(state);
+  if(body === lastSavedStateJSON) return;
+  saving = true;
+  setSyncStatus("Guardando...");
+  try{
+    await fetch(API_ORDER + "/state", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body
+    });
+    lastSavedStateJSON = body;
+    setSyncStatus("Guardado ✓ · sincronizado con Ignacio y Diego");
+  }catch(e){
+    setSyncStatus("No se pudo guardar (revisá conexión) — reintentando...");
+  }finally{
+    saving = false;
+  }
+}
+
+async function pollState(){
+  try{
+    const remote = await fetchRemoteState();
+    if(remote){
+      const remoteJSON = JSON.stringify(remote);
+      if(!saving && remoteJSON !== lastSavedStateJSON){
+        state = remote;
+        lastSavedStateJSON = remoteJSON;
+        render();
+        setSyncStatus("Actualizado desde el servidor");
+      }
+    }
+  }catch(e){
+    setSyncStatus("Sin conexión con el servidor, mostrando última versión conocida");
+  }
+}
+
+function getTotals(){
+  let totals = {sebastian:0, ignacio:0, diego:0, sin:0};
+  let grandTotal = 0;
+  const unassigned = [];
+
+  items.forEach(item => {
+    grandTotal += item.total;
+    const rowState = state[item.id] || {};
+    const assigned = PEOPLE.filter(p => rowState[p]);
+    if(assigned.length === 0){
+      totals.sin += item.total;
+      unassigned.push(item.name);
+    } else {
+      const share = item.total / assigned.length;
+      assigned.forEach(p => totals[p] += share);
+    }
+  });
+
+  return {totals, grandTotal, unassigned};
+}
+
+function computeTotals(){
+  const {totals, grandTotal} = getTotals();
+
+  document.getElementById("tot-sebastian").textContent = fmt(totals.sebastian);
+  document.getElementById("tot-ignacio").textContent = fmt(totals.ignacio);
+  document.getElementById("tot-diego").textContent = fmt(totals.diego);
+  document.getElementById("tot-sin").textContent = fmt(totals.sin);
+  document.getElementById("tot-total").textContent = fmt(grandTotal);
+
+  document.getElementById("foot-total").textContent = fmt(grandTotal);
+  document.getElementById("foot-sebastian").textContent = fmt(totals.sebastian);
+  document.getElementById("foot-ignacio").textContent = fmt(totals.ignacio);
+  document.getElementById("foot-diego").textContent = fmt(totals.diego);
+}
+
+function buildSummaryText(){
+  const {totals, grandTotal, unassigned} = getTotals();
+
+  const lines = [`🧾 ${orderMeta ? orderMeta.name : "Pedido"} — resumen`];
+  PEOPLE.forEach(p => lines.push(`${PEOPLE_LABELS[p]}: ${fmt(totals[p])}`));
+  if(totals.sin > 0) lines.push(`Sin asignar: ${fmt(totals.sin)}`);
+  lines.push(`Total: ${fmt(grandTotal)}`);
+
+  if(unassigned.length){
+    lines.push("");
+    lines.push(`⚠️ ${unassigned.length} producto(s) sin asignar:`);
+    unassigned.forEach(n => lines.push(`- ${n}`));
+  }
+
+  return lines.join("\n");
+}
+
+async function copySummary(){
+  const btn = document.getElementById("copy-btn");
+  const original = btn.textContent;
+  try{
+    await navigator.clipboard.writeText(buildSummaryText());
+    btn.textContent = "✅ Copiado";
+  }catch(e){
+    btn.textContent = "⚠️ No se pudo copiar";
+  }
+  setTimeout(()=>{ btn.textContent = original; }, 2000);
+}
+
+document.getElementById("copy-btn").addEventListener("click", copySummary);
+
+function render(){
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+
+  items.forEach(item => {
+    const rowState = state[item.id] || {sebastian:false, ignacio:false, diego:false};
+    const row = document.createElement("tr");
+    const checkedCount = PEOPLE.filter(p => rowState[p]).length;
+    if(checkedCount === 0) row.classList.add("unassigned");
+
+    const qtyLabel = item.qty > 1 ? `<span class="split-note">${item.qty} un. x ${fmt(item.unitPrice)}</span>` : "";
+
+    row.innerHTML = `
+      <td class="name">${escapeHtml(item.name)}${qtyLabel}</td>
+      <td class="center">${item.qty}</td>
+      <td class="money">${fmt(item.total)}</td>
+      <td class="center"><input type="checkbox" data-rowid="${item.id}" data-person="sebastian"></td>
+      <td class="center"><input type="checkbox" data-rowid="${item.id}" data-person="ignacio"></td>
+      <td class="center"><input type="checkbox" data-rowid="${item.id}" data-person="diego"></td>
+      <td class="center"><button type="button" class="todos-btn" data-rowid="${item.id}" title="Marca/limpia los 3 para esta fila">${checkedCount===3 ? "✕" : "✓"}</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    const rowid = cb.dataset.rowid, person = cb.dataset.person;
+    cb.checked = !!(state[rowid] && state[rowid][person]);
+    cb.addEventListener("change", ()=>{
+      if(!state[rowid]) state[rowid] = {sebastian:false, ignacio:false, diego:false};
+      state[rowid][person] = cb.checked;
+      render();
+      pushState();
+    });
+  });
+
+  document.querySelectorAll('.todos-btn').forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const rowid = btn.dataset.rowid;
+      const rowState = state[rowid] || {sebastian:false, ignacio:false, diego:false};
+      const allChecked = PEOPLE.every(p => rowState[p]);
+      const next = {};
+      PEOPLE.forEach(p => next[p] = !allChecked);
+      state[rowid] = next;
+      render();
+      pushState();
+    });
+  });
+
+  computeTotals();
+}
+
+// --- editar productos ---
+
+const editDialog = document.getElementById("edit-items-dialog");
+let editItems = [];
+
+function renderEditItems(){
+  const tbody = document.getElementById("edit-items-body");
+  tbody.innerHTML = editItems.map((it, idx) => `
+    <tr>
+      <td><input type="text" value="${escapeHtml(it.name)}" data-field="name" data-idx="${idx}"></td>
+      <td><input type="number" min="1" step="1" value="${it.qty}" data-field="qty" data-idx="${idx}"></td>
+      <td><input type="number" min="0" step="1" value="${it.unitPrice}" data-field="unitPrice" data-idx="${idx}"></td>
+      <td><button type="button" data-remove="${idx}" title="Borrar fila">✕</button></td>
+    </tr>
+  `).join("");
+
+  tbody.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const idx = Number(inp.dataset.idx), field = inp.dataset.field;
+      editItems[idx][field] = field === "name" ? inp.value : Number(inp.value);
+    });
+  });
+  tbody.querySelectorAll("[data-remove]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editItems.splice(Number(btn.dataset.remove), 1);
+      renderEditItems();
+    });
+  });
+}
+
+document.getElementById("edit-btn").addEventListener("click", () => {
+  editItems = items.map(it => ({...it}));
+  renderEditItems();
+  editDialog.showModal();
+});
+
+document.getElementById("edit-add-row").addEventListener("click", () => {
+  editItems.push({id: crypto.randomUUID(), name: "", qty: 1, unitPrice: 0});
+  renderEditItems();
+});
+
+editDialog.querySelectorAll("[data-close]").forEach(btn => {
+  btn.addEventListener("click", () => editDialog.close());
+});
+
+document.getElementById("edit-save").addEventListener("click", async () => {
+  const valid = editItems.length > 0 && editItems.every(it =>
+    it.name.trim().length > 0 && Number(it.qty) > 0 && Number(it.unitPrice) >= 0
+  );
+  if(!valid){
+    alert("Revisá que cada fila tenga nombre, cantidad mayor a 0 y precio válido (o borrala).");
+    return;
+  }
+  try{
+    const res = await fetch(API_ORDER + "/items", {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({items: editItems}),
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      alert(data.error || "No se pudieron guardar los productos.");
+      return;
+    }
+    items = data.items;
+    state = data.state;
+    lastSavedStateJSON = JSON.stringify(state);
+    document.getElementById("order-subtitle").textContent =
+      `${orderMeta.date || ""} · ${items.length} producto${items.length === 1 ? "" : "s"}`;
+    editDialog.close();
+    render();
+  }catch(e){
+    alert("No se pudieron guardar los productos (revisá conexión).");
+  }
+});
+
+async function init(){
+  if(!orderId){
+    document.querySelector(".wrap").innerHTML =
+      '<p>Falta el pedido. <a href="index.html">Volver a pedidos</a>.</p>';
+    return;
+  }
+
+  try{
+    const res = await fetch(API_ORDER, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const order = await res.json();
+    orderMeta = {id: order.id, name: order.name, date: order.date};
+    items = order.items || [];
+    state = order.state || {};
+    lastSavedStateJSON = JSON.stringify(state);
+
+    document.getElementById("order-title").textContent = order.name;
+    document.getElementById("order-subtitle").textContent =
+      `${order.date || ""} · ${items.length} producto${items.length === 1 ? "" : "s"}`;
+    document.title = `${order.name} - Compra Split`;
+
+    render();
+    setSyncStatus("Sincronizado con Ignacio y Diego");
+  }catch(e){
+    document.querySelector(".wrap").innerHTML =
+      '<p>No se pudo cargar este pedido. <a href="index.html">Volver a pedidos</a>.</p>';
+    return;
+  }
+
+  setInterval(async ()=>{
+    await pushState(); // reintenta cualquier cambio que haya fallado antes
+    await pollState();
+  }, POLL_MS);
+}
+
+init();
+</script>
+</body>
+</html>
