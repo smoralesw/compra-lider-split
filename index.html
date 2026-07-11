@@ -3,89 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pedidos - Compra Líder Split</title>
+<title>Carmencita Finance Manager — Pedidos</title>
+<link rel="icon" type="image/png" href="assets/logo-icon.png">
 <style>
   :root{
-    --accent:#2563eb;
-    --bg:#f8fafc;
-    --border:#e2e8f0;
+    --navy-dark:#0d1826;
+    --navy:#16283f;
+    --gold:#c8a25a;
+    --gold-light:#e4cd94;
+    --gold-dark:#8a6a34;
+    --bg:#f6f3ee;
+    --border:#e7e0d3;
+    --ink:#211d16;
+    --muted:#8a8272;
   }
   *{box-sizing:border-box;}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    margin:0; padding:24px; background:var(--bg); color:#0f172a;
+    margin:0; padding:0; background:var(--bg); color:var(--ink);
   }
-  .wrap{max-width:720px;margin:0 auto;}
-  .top-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
-  h1{font-size:22px;margin:0 0 4px;}
-  .subtitle{color:#64748b;font-size:14px;margin:0;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
-  .btn-primary{
-    background:var(--accent);color:#fff;border:none;border-radius:8px;
-    padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;
+  .hero{width:100%;overflow:hidden;background:var(--navy-dark);}
+  .hero img{width:100%;height:clamp(140px,20vw,240px);object-fit:cover;object-position:center;display:block;}
+  .masthead-bar{
+    background:var(--navy-dark);color:#dbe4ee;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:14px 24px;
   }
-  .btn-primary:hover{background:#1d4ed8;}
-  .btn-primary:disabled{background:#94a3b8;cursor:not-allowed;}
+  .masthead-subtitle{font-size:13px;margin:0;color:#aebccd;}
+
+  .wrap{max-width:720px;margin:0 auto;padding:24px;}
+
+  .btn-gold{
+    background:linear-gradient(180deg,var(--gold-light),var(--gold));
+    color:#2a1f0d;border:none;border-radius:8px;
+    padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .btn-gold:hover{filter:brightness(1.05);}
+  .btn-gold:disabled{background:#b7bcc4;filter:none;cursor:not-allowed;color:#fff;}
   .btn-secondary{
-    background:#fff;color:#334155;border:1px solid var(--border);border-radius:8px;
+    background:#fff;color:var(--navy);border:1px solid var(--border);border-radius:8px;
     padding:10px 16px;font-size:14px;cursor:pointer;
   }
-  .btn-secondary:hover{background:#f1f5f9;}
+  .btn-secondary:hover{background:#f1ede3;}
 
-  .muted{color:#94a3b8;font-size:13px;}
+  .muted{color:var(--muted);font-size:13px;}
 
   .order-card{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     background:#fff;border:1px solid var(--border);border-radius:10px;
-    padding:14px 16px;margin-bottom:10px;text-decoration:none;color:inherit;
+    padding:12px 12px 12px 16px;margin-bottom:10px;
   }
-  .order-card:hover{border-color:var(--accent);}
-  .order-name{font-weight:600;font-size:15px;}
-  .order-meta{font-size:12.5px;color:#64748b;margin-top:2px;}
-  .order-total{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .order-card:hover{border-color:var(--gold);}
+  .order-link{display:block;text-decoration:none;color:inherit;min-width:0;flex:1;}
+  .order-name{font-weight:600;font-size:15px;color:var(--navy);}
+  .order-card:hover .order-name{color:var(--gold-dark);}
+  .order-meta{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .order-side{display:flex;align-items:center;gap:10px;}
+  .order-total{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink);}
+  .delete-order-btn{
+    border:1px solid var(--border);background:#fff;border-radius:6px;
+    width:32px;height:32px;cursor:pointer;font-size:14px;color:#a89a7d;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .delete-order-btn:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2;}
+  .delete-order-btn:disabled{opacity:.5;cursor:not-allowed;}
 
   dialog{
     border:none;border-radius:12px;padding:20px;width:min(480px,90vw);
-    box-shadow:0 20px 40px rgba(15,23,42,.2);
+    box-shadow:0 20px 40px rgba(13,24,38,.35);
   }
-  dialog::backdrop{background:rgba(15,23,42,.45);}
-  dialog h2{margin:0 0 14px;font-size:17px;}
+  dialog::backdrop{background:rgba(13,24,38,.55);}
+  dialog h2{margin:0 0 14px;font-size:17px;color:var(--navy);}
   .tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);}
   .tab-btn{
     background:none;border:none;padding:8px 4px;margin-bottom:-1px;cursor:pointer;
-    font-size:13.5px;color:#64748b;border-bottom:2px solid transparent;
+    font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;
   }
-  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
-  .tab-panel label{display:block;font-size:12.5px;color:#475569;font-weight:600;margin:10px 0 4px;}
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600;}
+  .tab-panel label{display:block;font-size:12.5px;color:#4b4536;font-weight:600;margin:10px 0 4px;}
   .tab-panel input[type=text], .tab-panel input[type=date], .tab-panel input[type=file]{
     width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;
   }
   .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
 
   .review-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}
-  .review-table th{text-align:left;color:#64748b;font-size:11.5px;text-transform:uppercase;padding:4px 4px;}
+  .review-table th{text-align:left;color:var(--muted);font-size:11.5px;text-transform:uppercase;padding:4px 4px;}
   .review-table td{padding:3px 4px;}
   .review-table input[type=text]{width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:5px;font-size:13px;}
   .review-table input[type=number]{width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:5px;font-size:13px;}
   .review-table button{border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;width:26px;height:26px;}
-  #photo-add-row{margin-top:6px;border:1px dashed var(--border);background:#fff;border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer;color:#475569;}
+  #photo-add-row{margin-top:6px;border:1px dashed var(--border);background:#fff;border-radius:6px;padding:6px 10px;font-size:12.5px;cursor:pointer;color:#4b4536;}
 
   @media (max-width:600px){
-    body{padding:12px;}
-    h1{font-size:19px;}
+    .wrap{padding:16px;}
+    .masthead-bar{padding:12px 16px;}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top-row">
-    <div>
-      <h1>Pedidos</h1>
-      <p class="subtitle">Compras compartidas entre Sebastián, Ignacio y Diego</p>
-    </div>
-    <button type="button" class="btn-primary" id="new-order-btn">+ Nuevo pedido</button>
-  </div>
+<h1 class="sr-only">Carmencita Finance Manager — Pedidos</h1>
 
+<header class="hero">
+  <img src="assets/logo-hero.jpg" alt="Carmencita Finance Manager — Barrio El Golf, Las Condes, Santiago">
+</header>
+<div class="masthead-bar">
+  <p class="masthead-subtitle">Pedidos compartidos · Sebastián, Ignacio y Diego</p>
+  <button type="button" class="btn-gold" id="new-order-btn">+ Nuevo pedido</button>
+</div>
+
+<div class="wrap">
   <div id="orders-list"><p class="muted">Cargando pedidos…</p></div>
 </div>
 
@@ -103,7 +131,7 @@
     <input id="manual-date" type="date">
     <div class="dialog-actions">
       <button type="button" class="btn-secondary" data-close>Cancelar</button>
-      <button type="button" class="btn-primary" id="manual-create">Crear pedido</button>
+      <button type="button" class="btn-gold" id="manual-create">Crear pedido</button>
     </div>
   </div>
 
@@ -128,7 +156,7 @@
 
     <div class="dialog-actions">
       <button type="button" class="btn-secondary" data-close>Cancelar</button>
-      <button type="button" class="btn-primary" id="photo-create" disabled>Guardar pedido</button>
+      <button type="button" class="btn-gold" id="photo-create" disabled>Guardar pedido</button>
     </div>
   </div>
 </dialog>
@@ -137,6 +165,8 @@
 const API_ORDERS = "/api/orders";
 const API_PARSE = "/api/parse-receipt";
 const MAX_DIM = 1600;
+
+let currentOrders = [];
 
 function fmt(n){
   return "$" + Math.round(n).toLocaleString("es-CL");
@@ -167,6 +197,7 @@ async function loadOrders(){
 }
 
 function renderOrders(orders){
+  currentOrders = orders;
   const list = document.getElementById("orders-list");
   if(!orders.length){
     list.innerHTML = '<p class="muted">Todavía no hay pedidos. Creá el primero con el botón de arriba.</p>';
@@ -176,14 +207,43 @@ function renderOrders(orders){
     (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || "")
   );
   list.innerHTML = sorted.map(o => `
-    <a class="order-card" href="pedido.html?id=${encodeURIComponent(o.id)}">
-      <div>
+    <div class="order-card">
+      <a class="order-link" href="pedido.html?id=${encodeURIComponent(o.id)}">
         <div class="order-name">${escapeHtml(o.name)}</div>
         <div class="order-meta">${escapeHtml(o.date || "")} · ${o.itemCount || 0} producto${o.itemCount === 1 ? "" : "s"}</div>
+      </a>
+      <div class="order-side">
+        <div class="order-total">${fmt(o.total || 0)}</div>
+        <button type="button" class="delete-order-btn" data-id="${escapeHtml(o.id)}" title="Eliminar pedido">🗑️</button>
       </div>
-      <div class="order-total">${fmt(o.total || 0)}</div>
-    </a>
+    </div>
   `).join("");
+
+  list.querySelectorAll(".delete-order-btn").forEach(btn => {
+    btn.addEventListener("click", () => deleteOrder(btn));
+  });
+}
+
+async function deleteOrder(btn){
+  const id = btn.dataset.id;
+  const order = currentOrders.find(o => o.id === id);
+  const label = order ? order.name : "este pedido";
+  if(!confirm(`¿Eliminar "${label}"? Esta acción no se puede deshacer.`)) return;
+
+  btn.disabled = true;
+  try{
+    const res = await fetch(API_ORDERS + "/" + encodeURIComponent(id), {method: "DELETE"});
+    if(!res.ok){
+      const data = await res.json().catch(()=>({}));
+      alert(data.error || "No se pudo eliminar el pedido.");
+      btn.disabled = false;
+      return;
+    }
+    await loadOrders();
+  }catch(e){
+    alert("No se pudo eliminar el pedido (revisá conexión).");
+    btn.disabled = false;
+  }
 }
 
 async function createOrder(name, date, items){

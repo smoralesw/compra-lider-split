@@ -3,9 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pedido - Compra Split</title>
+<title>Pedido - Carmencita Finance Manager</title>
+<link rel="icon" type="image/png" href="assets/logo-icon.png">
 <style>
   :root{
+    --navy-dark:#0d1826;
+    --navy:#16283f;
+    --gold:#c8a25a;
+    --gold-light:#e4cd94;
+    --gold-dark:#8a6a34;
     --sebastian:#2563eb;
     --ignacio:#059669;
     --diego:#d97706;
@@ -19,6 +25,13 @@
     margin:0; padding:24px; background:var(--bg); color:#0f172a;
   }
   .wrap{max-width:980px;margin:0 auto;}
+  .brand-bar{
+    display:flex;align-items:center;gap:10px;
+    background:var(--navy-dark);color:var(--gold-light);
+    padding:8px 14px;border-radius:10px;margin-bottom:14px;
+    font-size:12.5px;font-weight:600;letter-spacing:.02em;
+  }
+  .brand-bar img{width:20px;height:20px;border-radius:4px;object-fit:cover;display:block;}
   .back-link{font-size:12.5px;color:#64748b;text-decoration:none;display:inline-block;margin-bottom:8px;}
   .back-link:hover{color:#334155;}
   .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
@@ -27,11 +40,13 @@
   .sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 20px;flex-wrap:wrap;}
   .sync-status{font-size:12px;color:#94a3b8;margin:0;}
   .actions{display:flex;gap:8px;flex-wrap:wrap;}
-  .copy-btn, .edit-btn{
+  .copy-btn, .edit-btn, .danger-btn{
     border:1px solid var(--border);background:#fff;border-radius:6px;
     padding:6px 10px;font-size:12px;color:#334155;cursor:pointer;white-space:nowrap;
   }
   .copy-btn:hover, .edit-btn:hover{background:#f1f5f9;}
+  .danger-btn{color:#b91c1c;}
+  .danger-btn:hover{background:#fef2f2;border-color:#dc2626;}
 
   .summary{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -80,10 +95,10 @@
   dialog h2{margin:0 0 14px;font-size:17px;}
   .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
   .btn-primary{
-    background:#2563eb;color:#fff;border:none;border-radius:8px;
-    padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;
+    background:linear-gradient(180deg,var(--gold-light),var(--gold));color:#2a1f0d;border:none;border-radius:8px;
+    padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;
   }
-  .btn-primary:hover{background:#1d4ed8;}
+  .btn-primary:hover{filter:brightness(1.05);}
   .btn-secondary{
     background:#fff;color:#334155;border:1px solid var(--border);border-radius:8px;
     padding:10px 16px;font-size:14px;cursor:pointer;
@@ -101,7 +116,7 @@
 
   @media print{
     footer{display:none;}
-    .copy-btn, .edit-btn, .back-link{display:none;}
+    .copy-btn, .edit-btn, .danger-btn, .back-link, .brand-bar{display:none;}
     body{background:#fff;padding:0;}
   }
 
@@ -115,6 +130,10 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="brand-bar">
+    <img src="assets/logo-icon.png" alt="">
+    <span>Carmencita Finance Manager</span>
+  </div>
   <a class="back-link" href="index.html">← Pedidos</a>
   <div class="title-row">
     <div>
@@ -128,6 +147,7 @@
     <div class="actions">
       <button type="button" class="edit-btn" id="edit-btn">✏️ Editar productos</button>
       <button type="button" class="copy-btn" id="copy-btn">📋 Copiar resumen</button>
+      <button type="button" class="danger-btn" id="delete-order-btn">🗑️ Eliminar pedido</button>
     </div>
   </div>
 
@@ -330,6 +350,27 @@ async function copySummary(){
 }
 
 document.getElementById("copy-btn").addEventListener("click", copySummary);
+
+document.getElementById("delete-order-btn").addEventListener("click", async () => {
+  const label = orderMeta ? orderMeta.name : "este pedido";
+  if(!confirm(`¿Eliminar "${label}"? Esta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById("delete-order-btn");
+  btn.disabled = true;
+  try{
+    const res = await fetch(API_ORDER, {method: "DELETE"});
+    if(!res.ok){
+      const data = await res.json().catch(()=>({}));
+      alert(data.error || "No se pudo eliminar el pedido.");
+      btn.disabled = false;
+      return;
+    }
+    window.location.href = "index.html";
+  }catch(e){
+    alert("No se pudo eliminar el pedido (revisá conexión).");
+    btn.disabled = false;
+  }
+});
 
 function render(){
   const tbody = document.getElementById("tbody");

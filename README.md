@@ -1,4 +1,4 @@
-# Compra Split - División de gastos por pedido
+# Carmencita Finance Manager
 
 App para manejar varios "pedidos" (compras de supermercado) y dividir el
 costo de cada uno entre Sebastián, Ignacio y Diego. Cada pedido tiene su
@@ -10,21 +10,22 @@ misma selección en tiempo real.
 
 ## Estructura
 
-- `index.html` — **landing**: lista todos los pedidos (nombre, fecha, total)
-  y permite crear uno nuevo, a mano o subiendo una foto del carrito/boleta
-  (se interpreta con IA, ver más abajo).
+- `index.html` — **landing**: hero con el logo, lista todos los pedidos
+  (nombre, fecha, total), permite crear uno nuevo (a mano o subiendo una
+  foto del carrito/boleta, interpretada con IA, ver más abajo) y eliminar
+  pedidos existentes.
 - `pedido.html` — vista de detalle de un pedido puntual, parametrizada por
   `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Acá vive la tabla de
-  productos con checkboxes, los totales por persona, la edición de productos
-  y el botón de copiar resumen.
+  productos con checkboxes, los totales por persona, la edición de
+  productos, el botón de copiar resumen y el de eliminar el pedido.
+- `assets/logo-hero.jpg` / `assets/logo-icon.png` — el banner y el ícono del
+  logo (favicon + marca en `pedido.html`). Si el logo cambia, basta con
+  reemplazar estos dos archivos manteniendo el nombre.
 - `netlify/functions/orders.mjs` — CRUD de pedidos sobre
   [Netlify Blobs](https://docs.netlify.com/blobs/overview/) (ver esquema de
   datos y endpoints abajo).
 - `netlify/functions/parse-receipt.mjs` — recibe una foto y usa la API de
   Anthropic (Claude, con visión) para extraer los productos automáticamente.
-- `netlify/functions/migrate.mjs` — función temporal de una sola ejecución
-  para migrar el pedido de Líder original (schema viejo, un solo pedido) al
-  schema nuevo. Se puede borrar una vez confirmada la migración.
 
 ## Esquema de datos (Netlify Blobs, store `compra-lider`)
 
