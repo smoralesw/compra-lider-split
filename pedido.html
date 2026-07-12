@@ -261,7 +261,7 @@ async function pushState(){
     lastSavedStateJSON = body;
     setSyncStatus("Guardado ✓ · sincronizado con Ignacio y Diego");
   }catch(e){
-    setSyncStatus("No se pudo guardar (revisá conexión) — reintentando...");
+    setSyncStatus("No se pudo guardar (revisa la conexión) — reintentando...");
   }finally{
     saving = false;
   }
@@ -367,7 +367,7 @@ document.getElementById("delete-order-btn").addEventListener("click", async () =
     }
     window.location.href = "index.html";
   }catch(e){
-    alert("No se pudo eliminar el pedido (revisá conexión).");
+    alert("No se pudo eliminar el pedido (revisa la conexión).");
     btn.disabled = false;
   }
 });
@@ -473,7 +473,7 @@ document.getElementById("edit-save").addEventListener("click", async () => {
     it.name.trim().length > 0 && Number(it.qty) > 0 && Number(it.unitPrice) >= 0
   );
   if(!valid){
-    alert("Revisá que cada fila tenga nombre, cantidad mayor a 0 y precio válido (o borrala).");
+    alert("Revisa que cada fila tenga nombre, cantidad mayor a 0 y precio válido (o bórrala).");
     return;
   }
   try{
@@ -495,7 +495,7 @@ document.getElementById("edit-save").addEventListener("click", async () => {
     editDialog.close();
     render();
   }catch(e){
-    alert("No se pudieron guardar los productos (revisá conexión).");
+    alert("No se pudieron guardar los productos (revisa la conexión).");
   }
 });
 
