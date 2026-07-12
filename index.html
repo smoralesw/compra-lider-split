@@ -140,9 +140,99 @@
   }
   .wishlist-import-list input[type=checkbox]{width:auto;flex-shrink:0;}
 
+  .dialog-form label{display:block;font-size:12.5px;color:#4b4536;font-weight:600;margin:10px 0 4px;}
+  .dialog-form input[type=text], .dialog-form input[type=number], .dialog-form input[type=date],
+  .dialog-form input[type=month], .dialog-form select{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;
+    font-family:inherit;background:#fff;color:var(--ink);
+  }
+  .dialog-form .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:12px;font-weight:400;}
+  .dialog-form .checkbox-row[hidden]{display:none;}
+  .dialog-form .checkbox-row input[type=checkbox]{width:auto;}
+
+  .cuenta-subtabs{display:flex;gap:8px;margin-bottom:14px;}
+  .cuenta-subtab{
+    background:#fff;border:1px solid var(--border);border-radius:100px;padding:7px 16px;
+    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+  }
+  .cuenta-subtab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .cuenta-person-pills{display:flex;gap:8px;margin-bottom:14px;}
+  .cuenta-person-pills[hidden]{display:none;}
+  .cuenta-pill{
+    background:#fff;border:1px solid var(--border);border-radius:100px;padding:6px 14px;
+    font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;
+  }
+  .cuenta-pill.active{background:var(--gold);border-color:var(--gold);color:#2a1f0d;}
+
+  .cuenta-month-row{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;}
+  .cuenta-month-row select{
+    border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;
+    background:#fff;color:var(--ink);min-width:160px;
+  }
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+  .kpi-grid .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .kpi-grid .card .label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .kpi-grid .card .value{font-size:19px;font-weight:700;margin-top:6px;color:var(--ink);}
+
+  .cuenta-row-2{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:18px;}
+  .cuenta-row-2 .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .cuenta-row-2 .card h3{font-size:14px;font-weight:600;margin:0 0 12px;color:var(--navy);}
+
+  .cuenta-progress-track{height:8px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+  .cuenta-progress-fill{height:100%;background:var(--gold);}
+  .cuenta-upcoming-title{font-size:12.5px;color:var(--muted);margin:16px 0 8px;}
+  .cuenta-upcoming-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .cuenta-upcoming-item:last-child{border-bottom:none;}
+  .cuenta-upcoming-date{color:var(--muted);font-size:12px;}
+
+  .cuenta-cat-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;}
+  .cuenta-cat-label{width:110px;flex-shrink:0;color:var(--muted);}
+  .cuenta-cat-track{flex:1;height:8px;background:var(--bg);border-radius:6px;overflow:hidden;}
+  .cuenta-cat-fill{height:100%;background:var(--navy);border-radius:6px;}
+  .cuenta-cat-amount{width:70px;text-align:right;flex-shrink:0;font-weight:600;color:var(--ink);}
+
+  .cuenta-table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .chip-group{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    padding:6px 12px;border-radius:100px;border:1px solid var(--border);background:#fff;
+    font-size:12.5px;cursor:pointer;color:var(--muted);
+  }
+  .chip.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  #cuenta-search{
+    border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;min-width:160px;
+  }
+
+  .cuenta-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .cuenta-badge-pagado{background:#e3f5ef;color:#0b6650;}
+  .cuenta-badge-pendiente{background:#fbeedc;color:#8a570b;}
+  .cuenta-badge-vencido{background:#fbeae8;color:#8e2a22;}
+  .cuenta-row-actions{display:flex;gap:6px;justify-content:flex-end;}
+
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:#fff;}
+  table{width:100%;min-width:600px;border-collapse:collapse;}
+  thead th{
+    position:sticky;top:0;background:#f1ede3;font-size:12px;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--muted);text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);
+  }
+  th.center, td.center{text-align:center;}
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:last-child{border-bottom:none;}
+  td{padding:9px 8px;font-size:13.5px;vertical-align:middle;color:var(--ink);}
+  td.name{font-weight:500;}
+  td.money{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .todos-btn{
+    border:1px solid var(--border);background:#fff;border-radius:6px;
+    width:26px;height:26px;cursor:pointer;font-size:13px;color:#334155;
+  }
+  .todos-btn:hover{background:#f1ede3;}
+
   @media (max-width:600px){
     .wrap{padding:16px;}
     .page-tabs-inner{padding:0 16px;gap:20px;}
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .cuenta-row-2{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -162,7 +252,75 @@
 
 <div class="wrap">
   <section id="page-cuentas" class="page-panel" hidden>
-    <p class="muted">Próximamente: gastos mensuales del hogar (arriendo, luz, agua, empleada doméstica, etc.).</p>
+    <div class="cuenta-subtabs">
+      <button type="button" class="cuenta-subtab active" data-cuenta-sub="hogar">Hogar</button>
+      <button type="button" class="cuenta-subtab" data-cuenta-sub="personal">Personal</button>
+    </div>
+
+    <div id="cuenta-person-pills" class="cuenta-person-pills" hidden>
+      <button type="button" class="cuenta-pill active" data-person="sebastian">Sebastián</button>
+      <button type="button" class="cuenta-pill" data-person="ignacio">Ignacio</button>
+      <button type="button" class="cuenta-pill" data-person="diego">Diego</button>
+    </div>
+
+    <div class="cuenta-month-row">
+      <select id="cuenta-month-select"></select>
+      <button type="button" class="btn-secondary" id="cuenta-new-month-btn">+ Nuevo mes</button>
+    </div>
+
+    <p class="muted" id="cuenta-no-months" hidden>Todavía no hay meses cargados para esta sección. Crea el primero con "+ Nuevo mes".</p>
+
+    <div id="cuenta-dashboard" hidden>
+      <div class="kpi-grid">
+        <div class="card"><div class="label">Total del mes</div><div class="value" id="cuenta-kpi-total">$0</div></div>
+        <div class="card"><div class="label">Pagado</div><div class="value" id="cuenta-kpi-pagado">$0</div></div>
+        <div class="card"><div class="label">Pendiente</div><div class="value" id="cuenta-kpi-pendiente">$0</div></div>
+        <div class="card"><div class="label">Vencido</div><div class="value" id="cuenta-kpi-vencido">$0</div></div>
+      </div>
+
+      <div class="cuenta-row-2">
+        <div class="card">
+          <h3>Progreso de pago</h3>
+          <div class="cuenta-progress-track"><div class="cuenta-progress-fill" id="cuenta-progress-fill" style="width:0%;"></div></div>
+          <p class="muted" id="cuenta-progress-label" style="margin:8px 0 0;">0% pagado</p>
+          <div class="cuenta-upcoming-title">Próximos vencimientos</div>
+          <div id="cuenta-upcoming-list"></div>
+        </div>
+        <div class="card">
+          <h3>Gasto por categoría</h3>
+          <div id="cuenta-category-bars"></div>
+        </div>
+      </div>
+
+      <div class="cuenta-table-toolbar">
+        <div class="chip-group" id="cuenta-filter-chips">
+          <button type="button" class="chip active" data-cuenta-filter="todas">Todas</button>
+          <button type="button" class="chip" data-cuenta-filter="pendiente">Pendientes</button>
+          <button type="button" class="chip" data-cuenta-filter="pagado">Pagadas</button>
+          <button type="button" class="chip" data-cuenta-filter="vencido">Vencidas</button>
+        </div>
+        <input type="text" id="cuenta-search" placeholder="Buscar cuenta…">
+        <button type="button" class="btn-gold" id="cuenta-new-btn">+ Nueva cuenta</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cuenta</th>
+              <th>Categoría</th>
+              <th style="text-align:right;">Monto</th>
+              <th class="center">Vencimiento</th>
+              <th class="center">Estado</th>
+              <th class="center">Método</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cuenta-table-body"></tbody>
+        </table>
+        <p class="muted" id="cuenta-empty" hidden style="padding:16px;">No hay cuentas que coincidan con el filtro.</p>
+      </div>
+    </div>
   </section>
 
   <section id="page-pedidos" class="page-panel">
@@ -240,7 +398,7 @@
   </div>
 
   <div id="tab-paste" class="tab-panel" hidden>
-    <label for="paste-input">Pegá el pedido (lista, correo de confirmación, carrito copiado, etc.)</label>
+    <label for="paste-input">Pega el pedido (lista, correo de confirmación, carrito copiado, etc.)</label>
     <textarea id="paste-input" rows="6" placeholder="Ej:&#10;Leche Entera 1L  x2  $990&#10;Pan Hallulla 9 un  $2.490"></textarea>
     <div class="dialog-actions" style="justify-content:flex-start;margin-top:8px;">
       <button type="button" class="btn-secondary" id="paste-analyze">Analizar texto</button>
@@ -265,6 +423,47 @@
       <button type="button" class="btn-secondary" data-close>Cancelar</button>
       <button type="button" class="btn-gold" id="paste-create" disabled>Guardar pedido</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="cuenta-month-dialog">
+  <h2>Nuevo mes</h2>
+  <div class="dialog-form">
+    <label for="cuenta-month-input">Mes</label>
+    <input type="month" id="cuenta-month-input">
+    <label class="checkbox-row" id="cuenta-copy-label">
+      <input type="checkbox" id="cuenta-copy-checkbox">
+      Copiar cuentas del mes anterior
+    </label>
+  </div>
+  <div class="dialog-actions">
+    <button type="button" class="btn-secondary" data-close>Cancelar</button>
+    <button type="button" class="btn-gold" id="cuenta-month-create">Crear mes</button>
+  </div>
+</dialog>
+
+<dialog id="cuenta-item-dialog">
+  <h2>Nueva cuenta</h2>
+  <div class="dialog-form">
+    <label for="cuenta-f-nombre">Nombre</label>
+    <input type="text" id="cuenta-f-nombre" placeholder="Ej: Arriendo">
+    <label for="cuenta-f-categoria">Categoría</label>
+    <select id="cuenta-f-categoria"></select>
+    <label for="cuenta-f-monto">Monto (CLP)</label>
+    <input type="number" id="cuenta-f-monto" min="0" step="1" placeholder="0">
+    <label for="cuenta-f-fecha">Vencimiento</label>
+    <input type="date" id="cuenta-f-fecha">
+    <label for="cuenta-f-metodo">Método</label>
+    <select id="cuenta-f-metodo">
+      <option>Débito automático</option>
+      <option>Transferencia</option>
+      <option>Tarjeta</option>
+      <option>Efectivo</option>
+    </select>
+  </div>
+  <div class="dialog-actions">
+    <button type="button" class="btn-secondary" data-close>Cancelar</button>
+    <button type="button" class="btn-gold" id="cuenta-item-save">Guardar cuenta</button>
   </div>
 </dialog>
 
@@ -303,7 +502,7 @@ async function loadOrders(){
     const orders = await res.json();
     renderOrders(Array.isArray(orders) ? orders : []);
   }catch(e){
-    list.innerHTML = '<p class="muted">No se pudieron cargar los pedidos. Revisá la conexión y recargá.</p>';
+    list.innerHTML = '<p class="muted">No se pudieron cargar los pedidos. Revisa la conexión y recarga.</p>';
   }
 }
 
@@ -311,7 +510,7 @@ function renderOrders(orders){
   currentOrders = orders;
   const list = document.getElementById("orders-list");
   if(!orders.length){
-    list.innerHTML = '<p class="muted">Todavía no hay pedidos. Creá el primero con el botón de arriba.</p>';
+    list.innerHTML = '<p class="muted">Todavía no hay pedidos. Crea el primero con el botón de arriba.</p>';
     return;
   }
   const sorted = [...orders].sort((a,b)=>
@@ -352,7 +551,7 @@ async function deleteOrder(btn){
     }
     await loadOrders();
   }catch(e){
-    alert("No se pudo eliminar el pedido (revisá conexión).");
+    alert("No se pudo eliminar el pedido (revisa la conexión).");
     btn.disabled = false;
   }
 }
@@ -423,7 +622,7 @@ async function removeWishlistItem(id){
     await fetch(API_WISHLIST + "/" + encodeURIComponent(id), {method: "DELETE"});
     await loadWishlist();
   }catch(e){
-    alert("No se pudo quitar el item (revisá conexión).");
+    alert("No se pudo quitar el item (revisa la conexión).");
   }
 }
 
@@ -449,7 +648,7 @@ document.getElementById("wishlist-form").addEventListener("submit", async (e) =>
     input.value = "";
     await loadWishlist();
   }catch(err){
-    alert("No se pudo agregar (revisá conexión).");
+    alert("No se pudo agregar (revisa la conexión).");
   }finally{
     btn.disabled = false;
   }
@@ -474,6 +673,8 @@ function renderManualWishlistImport(){
 
 // --- page tabs (Cuentas / Pedidos) ---
 
+let cuentasInitialized = false;
+
 document.querySelectorAll(".page-tab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".page-tab").forEach(b => b.classList.remove("active"));
@@ -481,6 +682,10 @@ document.querySelectorAll(".page-tab").forEach(btn => {
     const tab = btn.dataset.pageTab;
     document.getElementById("page-cuentas").hidden = tab !== "cuentas";
     document.getElementById("page-pedidos").hidden = tab !== "pedidos";
+    if(tab === "cuentas" && !cuentasInitialized){
+      cuentasInitialized = true;
+      initCuentas();
+    }
   });
 });
 
@@ -498,7 +703,7 @@ document.getElementById("new-order-btn").addEventListener("click", () => {
 });
 
 document.querySelectorAll("[data-close]").forEach(btn => {
-  btn.addEventListener("click", () => dialog.close());
+  btn.addEventListener("click", () => btn.closest("dialog")?.close());
 });
 
 dialog.addEventListener("close", () => {
@@ -542,7 +747,7 @@ document.getElementById("manual-create").addEventListener("click", async () => {
   const name = document.getElementById("manual-name").value.trim();
   const date = document.getElementById("manual-date").value;
   if(!name || !date){
-    alert("Completá nombre y fecha.");
+    alert("Completa nombre y fecha.");
     return;
   }
   const checkedIds = Array.from(
@@ -641,7 +846,7 @@ document.getElementById("photo-input").addEventListener("change", async (e) => {
     }));
     statusEl.textContent = photoItems.length
       ? `${photoItems.length} producto(s) detectado(s). Revisá antes de guardar.`
-      : "No se detectaron productos. Podés agregarlos a mano.";
+      : "No se detectaron productos. Puedes agregarlos a mano.";
     renderPhotoItems();
     document.getElementById("photo-review").hidden = false;
     document.getElementById("photo-create").disabled = false;
@@ -654,7 +859,7 @@ document.getElementById("photo-create").addEventListener("click", async () => {
   const name = document.getElementById("photo-name").value.trim() || "Pedido sin nombre";
   const date = document.getElementById("photo-date").value || todayLocalISODate();
   if(!photoItems.length){
-    alert("Agregá al menos un producto antes de guardar.");
+    alert("Agrega al menos un producto antes de guardar.");
     return;
   }
   await createOrder(name, date, photoItems);
@@ -699,7 +904,7 @@ document.getElementById("paste-analyze").addEventListener("click", async () => {
   const text = document.getElementById("paste-input").value.trim();
   const statusEl = document.getElementById("paste-status");
   if(!text){
-    statusEl.textContent = "Pegá primero el texto del pedido.";
+    statusEl.textContent = "Pega primero el texto del pedido.";
     return;
   }
   document.getElementById("paste-review").hidden = true;
@@ -721,7 +926,7 @@ document.getElementById("paste-analyze").addEventListener("click", async () => {
     }));
     statusEl.textContent = pasteItems.length
       ? `${pasteItems.length} producto(s) detectado(s). Revisá antes de guardar.`
-      : "No se detectaron productos. Podés agregarlos a mano.";
+      : "No se detectaron productos. Puedes agregarlos a mano.";
     renderPasteItems();
     document.getElementById("paste-review").hidden = false;
     document.getElementById("paste-create").disabled = false;
@@ -734,10 +939,322 @@ document.getElementById("paste-create").addEventListener("click", async () => {
   const name = document.getElementById("paste-name").value.trim() || "Pedido sin nombre";
   const date = document.getElementById("paste-date").value || todayLocalISODate();
   if(!pasteItems.length){
-    alert("Agregá al menos un producto antes de guardar.");
+    alert("Agrega al menos un producto antes de guardar.");
     return;
   }
   await createOrder(name, date, pasteItems);
+});
+
+// --- cuentas (Hogar / Personal) ---
+
+const API_CUENTAS = "/api/cuentas";
+const CUENTA_CATEGORIES_HOGAR = ["Arriendo", "Gastos comunes", "Luz", "Agua", "Gas", "Empleada doméstica", "Otro"];
+const CUENTA_CATEGORIES_PERSONAL = [
+  "Gimnasio", "Comida", "Suscripciones", "Seguro auto", "Seguro otros",
+  "TAG", "Dividendo otro depto", "Cuenta teléfono", "Otro",
+];
+const CUENTA_SCOPES = {
+  "hogar": { label: "Hogar", categories: CUENTA_CATEGORIES_HOGAR },
+  "personal-sebastian": { label: "Sebastián", categories: CUENTA_CATEGORIES_PERSONAL },
+  "personal-ignacio": { label: "Ignacio", categories: CUENTA_CATEGORIES_PERSONAL },
+  "personal-diego": { label: "Diego", categories: CUENTA_CATEGORIES_PERSONAL },
+};
+const CUENTA_MESES_CORTOS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+let currentCuentaSubtab = "hogar"; // "hogar" | "personal"
+let currentCuentaPerson = "sebastian";
+let currentCuentaScope = "hogar";
+let cuentaMonths = [];
+let currentCuentaMonth = null;
+let cuentaItems = [];
+let cuentaFilter = "todas";
+let cuentaSearch = "";
+
+function updateCuentaScope(){
+  currentCuentaScope = currentCuentaSubtab === "hogar" ? "hogar" : `personal-${currentCuentaPerson}`;
+}
+
+function fmtCuentaDate(fecha){
+  const [, m, d] = fecha.split("-");
+  return `${d} ${CUENTA_MESES_CORTOS[Number(m) - 1] || ""}`;
+}
+
+function cuentaEstado(it){
+  if(it.pagado) return "pagado";
+  return it.fecha < todayLocalISODate() ? "vencido" : "pendiente";
+}
+
+function cuentaEstadoBadge(estado){
+  if(estado === "pagado") return '<span class="cuenta-badge cuenta-badge-pagado">Pagado</span>';
+  if(estado === "vencido") return '<span class="cuenta-badge cuenta-badge-vencido">Vencido</span>';
+  return '<span class="cuenta-badge cuenta-badge-pendiente">Pendiente</span>';
+}
+
+async function initCuentas(){
+  updateCuentaScope();
+  await loadCuentaMonths();
+}
+
+async function loadCuentaMonths(){
+  try{
+    const res = await fetch(`${API_CUENTAS}/${currentCuentaScope}`, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    cuentaMonths = await res.json();
+  }catch(e){
+    cuentaMonths = [];
+  }
+
+  renderCuentaMonthSelect();
+
+  if(cuentaMonths.length){
+    currentCuentaMonth = cuentaMonths[0].month;
+    await loadCuentaItems();
+  }else{
+    currentCuentaMonth = null;
+    cuentaItems = [];
+    renderCuentaDashboard();
+  }
+
+  document.getElementById("cuenta-dashboard").hidden = !currentCuentaMonth;
+  document.getElementById("cuenta-no-months").hidden = !!currentCuentaMonth;
+}
+
+function renderCuentaMonthSelect(){
+  const select = document.getElementById("cuenta-month-select");
+  select.innerHTML = cuentaMonths.map(m => `<option value="${m.month}">${escapeHtml(m.label)}</option>`).join("");
+  if(currentCuentaMonth) select.value = currentCuentaMonth;
+}
+
+async function loadCuentaItems(){
+  if(!currentCuentaMonth) return;
+  try{
+    const res = await fetch(`${API_CUENTAS}/${currentCuentaScope}/${currentCuentaMonth}`, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    cuentaItems = data.items || [];
+  }catch(e){
+    cuentaItems = [];
+  }
+  renderCuentaDashboard();
+}
+
+async function saveCuentaItems(items){
+  const res = await fetch(`${API_CUENTAS}/${currentCuentaScope}/${currentCuentaMonth}/items`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({items}),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){
+    alert(data.error || "No se pudo guardar la cuenta.");
+    return false;
+  }
+  cuentaItems = data.items;
+  renderCuentaDashboard();
+  return true;
+}
+
+function renderCuentaDashboard(){
+  const withEstado = cuentaItems.map(it => ({...it, estado: cuentaEstado(it)}));
+  const total = cuentaItems.reduce((s, it) => s + it.monto, 0);
+  const pagado = cuentaItems.filter(it => it.pagado).reduce((s, it) => s + it.monto, 0);
+  const pendiente = withEstado.filter(it => it.estado === "pendiente").reduce((s, it) => s + it.monto, 0);
+  const vencido = withEstado.filter(it => it.estado === "vencido").reduce((s, it) => s + it.monto, 0);
+  const pct = total > 0 ? Math.round((pagado / total) * 100) : 0;
+
+  document.getElementById("cuenta-kpi-total").textContent = fmt(total);
+  document.getElementById("cuenta-kpi-pagado").textContent = fmt(pagado);
+  document.getElementById("cuenta-kpi-pendiente").textContent = fmt(pendiente);
+  document.getElementById("cuenta-kpi-vencido").textContent = fmt(vencido);
+  document.getElementById("cuenta-progress-fill").style.width = pct + "%";
+  document.getElementById("cuenta-progress-label").textContent =
+    `${pct}% pagado (${fmt(pagado)} de ${fmt(total)})`;
+
+  const upcoming = withEstado
+    .filter(it => it.estado !== "pagado")
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    .slice(0, 4);
+  document.getElementById("cuenta-upcoming-list").innerHTML = upcoming.length
+    ? upcoming.map(it => `
+        <div class="cuenta-upcoming-item">
+          <span>${escapeHtml(it.nombre)}</span>
+          <span class="cuenta-upcoming-date">${fmtCuentaDate(it.fecha)}</span>
+        </div>
+      `).join("")
+    : '<p class="muted">No hay cuentas pendientes.</p>';
+
+  const byCat = {};
+  cuentaItems.forEach(it => { byCat[it.categoria] = (byCat[it.categoria] || 0) + it.monto; });
+  const maxCat = Math.max(...Object.values(byCat), 1);
+  document.getElementById("cuenta-category-bars").innerHTML = Object.entries(byCat).length
+    ? Object.entries(byCat)
+        .sort((a, b) => b[1] - a[1])
+        .map(([cat, amt]) => {
+          const pctBar = Math.round((amt / maxCat) * 100);
+          return `
+            <div class="cuenta-cat-row">
+              <div class="cuenta-cat-label">${escapeHtml(cat)}</div>
+              <div class="cuenta-cat-track"><div class="cuenta-cat-fill" style="width:${pctBar}%;"></div></div>
+              <div class="cuenta-cat-amount">${fmt(amt)}</div>
+            </div>
+          `;
+        }).join("")
+    : '<p class="muted">Sin datos.</p>';
+
+  let filtered = withEstado.filter(it => cuentaFilter === "todas" || it.estado === cuentaFilter);
+  if(cuentaSearch.trim()){
+    filtered = filtered.filter(it => it.nombre.toLowerCase().includes(cuentaSearch.trim().toLowerCase()));
+  }
+  filtered = filtered.slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  document.getElementById("cuenta-empty").hidden = filtered.length !== 0;
+  document.getElementById("cuenta-table-body").innerHTML = filtered.map(it => `
+    <tr>
+      <td class="name">${escapeHtml(it.nombre)}</td>
+      <td>${escapeHtml(it.categoria)}</td>
+      <td class="money">${fmt(it.monto)}</td>
+      <td class="center">${fmtCuentaDate(it.fecha)}</td>
+      <td class="center">${cuentaEstadoBadge(it.estado)}</td>
+      <td class="center">${escapeHtml(it.metodo)}</td>
+      <td class="center">
+        <div class="cuenta-row-actions">
+          <button type="button" class="todos-btn" data-toggle="${escapeHtml(it.id)}" title="${it.pagado ? "Marcar como pendiente" : "Marcar como pagado"}">${it.pagado ? "↩" : "✓"}</button>
+          <button type="button" class="todos-btn" data-delete="${escapeHtml(it.id)}" title="Eliminar">✕</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+
+  document.querySelectorAll("#cuenta-table-body [data-toggle]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const next = cuentaItems.map(it => it.id === btn.dataset.toggle ? {...it, pagado: !it.pagado} : it);
+      await saveCuentaItems(next);
+    });
+  });
+  document.querySelectorAll("#cuenta-table-body [data-delete]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if(!confirm("¿Eliminar esta cuenta?")) return;
+      const next = cuentaItems.filter(it => it.id !== btn.dataset.delete);
+      await saveCuentaItems(next);
+    });
+  });
+}
+
+document.querySelectorAll(".cuenta-subtab").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".cuenta-subtab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentCuentaSubtab = btn.dataset.cuentaSub;
+    document.getElementById("cuenta-person-pills").hidden = currentCuentaSubtab !== "personal";
+    updateCuentaScope();
+    await loadCuentaMonths();
+  });
+});
+
+document.querySelectorAll(".cuenta-pill").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".cuenta-pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentCuentaPerson = btn.dataset.person;
+    updateCuentaScope();
+    await loadCuentaMonths();
+  });
+});
+
+document.getElementById("cuenta-month-select").addEventListener("change", async (e) => {
+  currentCuentaMonth = e.target.value;
+  await loadCuentaItems();
+});
+
+document.getElementById("cuenta-filter-chips").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  document.querySelectorAll("#cuenta-filter-chips .chip").forEach(c => c.classList.remove("active"));
+  chip.classList.add("active");
+  cuentaFilter = chip.dataset.cuentaFilter;
+  renderCuentaDashboard();
+});
+
+document.getElementById("cuenta-search").addEventListener("input", (e) => {
+  cuentaSearch = e.target.value;
+  renderCuentaDashboard();
+});
+
+const cuentaMonthDialog = document.getElementById("cuenta-month-dialog");
+
+document.getElementById("cuenta-new-month-btn").addEventListener("click", () => {
+  document.getElementById("cuenta-month-input").value = "";
+  const hasMonths = cuentaMonths.length > 0;
+  document.getElementById("cuenta-copy-checkbox").checked = hasMonths;
+  document.getElementById("cuenta-copy-label").hidden = !hasMonths;
+  cuentaMonthDialog.showModal();
+});
+
+document.getElementById("cuenta-month-create").addEventListener("click", async () => {
+  const month = document.getElementById("cuenta-month-input").value;
+  if(!month){
+    alert("Elige un mes.");
+    return;
+  }
+  const copyFrom = (document.getElementById("cuenta-copy-checkbox").checked && cuentaMonths[0])
+    ? cuentaMonths[0].month
+    : undefined;
+
+  const res = await fetch(`${API_CUENTAS}/${currentCuentaScope}`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({month, copyFrom}),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){
+    alert(data.error || "No se pudo crear el mes.");
+    return;
+  }
+
+  cuentaMonthDialog.close();
+  await loadCuentaMonths();
+  document.getElementById("cuenta-month-select").value = month;
+  currentCuentaMonth = month;
+  await loadCuentaItems();
+});
+
+const cuentaItemDialog = document.getElementById("cuenta-item-dialog");
+
+document.getElementById("cuenta-new-btn").addEventListener("click", () => {
+  if(!currentCuentaMonth){
+    alert("Primero crea un mes.");
+    return;
+  }
+  document.getElementById("cuenta-f-nombre").value = "";
+  document.getElementById("cuenta-f-monto").value = "";
+  document.getElementById("cuenta-f-fecha").value = "";
+  const categorySelect = document.getElementById("cuenta-f-categoria");
+  categorySelect.innerHTML = CUENTA_SCOPES[currentCuentaScope].categories
+    .map(c => `<option>${escapeHtml(c)}</option>`).join("");
+  cuentaItemDialog.showModal();
+});
+
+document.getElementById("cuenta-item-save").addEventListener("click", async () => {
+  const nombre = document.getElementById("cuenta-f-nombre").value.trim();
+  const monto = Number(document.getElementById("cuenta-f-monto").value);
+  const fecha = document.getElementById("cuenta-f-fecha").value;
+  if(!nombre || !fecha || !(monto >= 0)){
+    alert("Completa nombre, monto y fecha de vencimiento.");
+    return;
+  }
+  const nuevo = {
+    id: crypto.randomUUID(),
+    nombre,
+    categoria: document.getElementById("cuenta-f-categoria").value,
+    monto,
+    fecha,
+    pagado: false,
+    metodo: document.getElementById("cuenta-f-metodo").value,
+  };
+  const ok = await saveCuentaItems([...cuentaItems, nuevo]);
+  if(ok){
+    cuentaItemDialog.close();
+  }
 });
 
 loadOrders();

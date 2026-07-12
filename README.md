@@ -11,12 +11,12 @@ misma selección en tiempo real.
 ## Estructura
 
 - `index.html` — **landing**: hero con el logo y dos pestañas, **Cuentas**
-  (gastos mensuales del hogar — placeholder por ahora) y **Pedidos** (wishlist
-  compartida + lista de pedidos con nombre/fecha/total, crear uno nuevo a
-  mano, subiendo una foto o pegando texto — todo interpretado con IA, ver
-  más abajo — y eliminar pedidos existentes).
+  (gastos mensuales, con sub-secciones Hogar y Personal, ver más abajo) y
+  **Pedidos** (wishlist compartida + lista de pedidos con nombre/fecha/total,
+  crear uno nuevo a mano, subiendo una foto o pegando texto — todo
+  interpretado con IA, ver más abajo — y eliminar pedidos existentes).
 - `pedido.html` — vista de detalle de un pedido puntual, parametrizada por
-  `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Acá vive la tabla de
+  `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Aquí vive la tabla de
   productos con checkboxes, los totales por persona, la edición de
   productos, el botón de copiar resumen y el de eliminar el pedido.
 - `assets/logo-hero.jpg` / `assets/logo-icon.png` — el banner y el ícono del
@@ -32,6 +32,9 @@ misma selección en tiempo real.
   productos, mismo patrón que `parse-receipt.mjs` pero sin imagen.
 - `netlify/functions/wishlist.mjs` — CRUD simple de la wishlist compartida
   (ver esquema y endpoints abajo).
+- `netlify/functions/cuentas.mjs` — CRUD de cuentas mensuales (Hogar y
+  Personal) sobre Blobs, con historial real por mes (ver esquema y
+  endpoints abajo).
 
 ## Esquema de datos (Netlify Blobs, store `compra-lider`)
 
@@ -44,6 +47,13 @@ misma selección en tiempo real.
 - `orders/<id>/state` — objeto keyeado por ese mismo `id` de producto:
   `{[itemId]: {sebastian, ignacio, diego}}`.
 - `wishlist` — array compartido: `[{id, text, addedBy, createdAt}]`.
+- `cuentas/<scope>/index` — meses con datos para ese scope:
+  `[{month:"2026-07", label:"Julio 2026", itemCount, total, pagado,
+  pendiente, vencido, createdAt}]`. `scope` es uno de `hogar`,
+  `personal-sebastian`, `personal-ignacio`, `personal-diego`.
+- `cuentas/<scope>/<month>/items` — `[{id, nombre, categoria, monto, fecha,
+  pagado, metodo}]`. El estado "vencido" no se guarda — se calcula al
+  vuelo (`!pagado && fecha < hoy`).
 
 ## Endpoints
 
@@ -68,6 +78,16 @@ misma selección en tiempo real.
   debe ser `sebastian`, `ignacio` o `diego`).
 - `DELETE /api/wishlist/:id` — quita un item (a mano, o automático al
   importarlo a un pedido nuevo).
+- `GET /api/cuentas/:scope` — meses disponibles para ese scope.
+- `POST /api/cuentas/:scope` — crea un mes. Body `{month: "YYYY-MM",
+  copyFrom?: "YYYY-MM"}`. Si `copyFrom` viene, copia las cuentas de ese mes
+  (nombre/categoría/monto/método), corre la fecha al mes nuevo y resetea
+  `pagado` a `false`.
+- `GET /api/cuentas/:scope/:month` — cuentas de ese mes.
+- `PUT /api/cuentas/:scope/:month/items` — reemplaza el array completo
+  (agregar/editar/borrar/marcar pagada = mandar el array nuevo entero).
+- `DELETE /api/cuentas/:scope/:month` — borra un mes (sin botón en la UI
+  todavía).
 
 ## Cómo funciona la sincronización de checkboxes
 
@@ -104,6 +124,28 @@ para la próxima compra, indicando quién lo pidió. Al crear un pedido manual,
 se pueden tildar items de la wishlist para agregarlos directo como productos
 del pedido nuevo (con cantidad 1 y precio $0, a completar después); al
 guardar el pedido, esos items se sacan automáticamente de la wishlist.
+
+## Cuentas (Hogar y Personal)
+
+Dentro de la pestaña Cuentas hay dos sub-secciones:
+
+- **Hogar**: gastos grupales del hogar (arriendo, gastos comunes, luz, agua,
+  gas, empleada doméstica, otro). Sin split entre personas — solo se
+  trackea pagado/pendiente/vencido.
+- **Personal**: cada persona (Sebastián, Ignacio, Diego) lleva sus propios
+  gastos (gimnasio, comida, suscripciones, seguros, TAG, dividendo de otro
+  departamento, cuenta de teléfono, etc.), independientes entre sí.
+
+Ambas comparten el mismo componente de dashboard (KPIs de total/pagado/
+pendiente/vencido, barra de progreso, próximos vencimientos, gasto por
+categoría, tabla filtrable con alta/edición/borrado/marcar pagada) — internamente
+son 4 "scopes" (`hogar` + un `personal-<nombre>` por persona) manejados por
+el mismo backend genérico en `netlify/functions/cuentas.mjs`.
+
+Cada scope lleva su propio historial por mes. Al crear un mes nuevo se
+puede tildar "Copiar cuentas del mes anterior" para no tener que
+reescribir arriendo/luz/gas cada vez — se copian con la fecha corrida al
+mes nuevo y el estado reseteado a pendiente.
 
 ## Desarrollo local
 
