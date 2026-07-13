@@ -36,6 +36,26 @@ function monthLabel(month) {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${y}`;
 }
 
+function todayISODate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function computeTotals(items) {
+  const today = todayISODate();
+  let total = 0, pagado = 0, pendiente = 0, vencido = 0;
+  items.forEach((it) => {
+    total += it.monto;
+    if (it.pagado) pagado += it.monto;
+    else if (it.fecha < today) vencido += it.monto;
+    else pendiente += it.monto;
+  });
+  return { total, pagado, pendiente, vencido };
+}
+
 export default async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -78,18 +98,22 @@ export default async (req) => {
     createdItems[month] = items;
   }
 
+  // Rebuild the index for every seeded month (not just the ones just
+  // created) so a month that already had items but was missing its index
+  // entry (e.g. from a previous partial run) gets fixed too.
   const index = (await store.get(`cuentas/${SCOPE}/index`, { type: "json" })) || [];
   const nextIndex = [...index];
-  for (const month of created) {
+  const now = new Date().toISOString();
+
+  for (const month of MONTHS) {
+    const items = createdItems[month] || (await store.get(`cuentas/${SCOPE}/${month}/items`, { type: "json" })) || [];
+    const existingEntry = nextIndex.find((e) => e.month === month);
     const entry = {
       month,
       label: monthLabel(month),
-      itemCount: createdItems[month].length,
-      total: 0,
-      pagado: 0,
-      pendiente: 0,
-      vencido: 0,
-      createdAt: new Date().toISOString(),
+      itemCount: items.length,
+      ...computeTotals(items),
+      createdAt: existingEntry ? existingEntry.createdAt : now,
     };
     const idx = nextIndex.findIndex((e) => e.month === month);
     if (idx >= 0) nextIndex[idx] = entry;
