@@ -10,11 +10,12 @@ misma selección en tiempo real.
 
 ## Estructura
 
-- `index.html` — **landing**: hero con el logo y dos pestañas, **Cuentas**
-  (gastos mensuales, con sub-secciones Hogar y Personal, ver más abajo) y
-  **Pedidos** (wishlist compartida + lista de pedidos con nombre/fecha/total,
-  crear uno nuevo a mano, subiendo una foto o pegando texto — todo
-  interpretado con IA, ver más abajo — y eliminar pedidos existentes).
+- `index.html` — **landing**: hero con el logo, un sidebar a la izquierda
+  (se puede abrir/cerrar) para navegar entre **Cuentas** (gastos mensuales,
+  con pestañas Hogar/Personal, ver más abajo) y **Pedidos** (wishlist
+  compartida + lista de pedidos con nombre/fecha/total, crear uno nuevo a
+  mano, subiendo una foto o pegando texto — todo interpretado con IA, ver
+  más abajo — y eliminar pedidos existentes).
 - `pedido.html` — vista de detalle de un pedido puntual, parametrizada por
   `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Aquí vive la tabla de
   productos con checkboxes, los totales por persona, la edición de
@@ -35,6 +36,10 @@ misma selección en tiempo real.
 - `netlify/functions/cuentas.mjs` — CRUD de cuentas mensuales (Hogar y
   Personal) sobre Blobs, con historial real por mes (ver esquema y
   endpoints abajo).
+- `netlify/functions/seed-cuentas.mjs` — función temporal de una sola
+  ejecución para precargar las cuentas recurrentes de Hogar de julio a
+  diciembre 2026. Se puede borrar una vez confirmado el seed (ver sección
+  "Cuentas" más abajo).
 
 ## Esquema de datos (Netlify Blobs, store `compra-lider`)
 
@@ -52,8 +57,9 @@ misma selección en tiempo real.
   pendiente, vencido, createdAt}]`. `scope` es uno de `hogar`,
   `personal-sebastian`, `personal-ignacio`, `personal-diego`.
 - `cuentas/<scope>/<month>/items` — `[{id, nombre, categoria, monto, fecha,
-  pagado, metodo}]`. El estado "vencido" no se guarda — se calcula al
-  vuelo (`!pagado && fecha < hoy`).
+  pagado}]`. El estado "vencido" no se guarda — se calcula al vuelo
+  (`!pagado && fecha < hoy`). No tiene método de pago (se sacó, no
+  agregaba valor).
 
 ## Endpoints
 
@@ -81,8 +87,9 @@ misma selección en tiempo real.
 - `GET /api/cuentas/:scope` — meses disponibles para ese scope.
 - `POST /api/cuentas/:scope` — crea un mes. Body `{month: "YYYY-MM",
   copyFrom?: "YYYY-MM"}`. Si `copyFrom` viene, copia las cuentas de ese mes
-  (nombre/categoría/monto/método), corre la fecha al mes nuevo y resetea
-  `pagado` a `false`.
+  (nombre/categoría/monto), corre la fecha al mes nuevo y resetea `pagado`
+  a `false`. No hay botón en la UI para esto (ver sección "Cuentas" más
+  abajo), pero el endpoint queda disponible para uso futuro.
 - `GET /api/cuentas/:scope/:month` — cuentas de ese mes.
 - `PUT /api/cuentas/:scope/:month/items` — reemplaza el array completo
   (agregar/editar/borrar/marcar pagada = mandar el array nuevo entero).
@@ -127,25 +134,50 @@ guardar el pedido, esos items se sacan automáticamente de la wishlist.
 
 ## Cuentas (Hogar y Personal)
 
-Dentro de la pestaña Cuentas hay dos sub-secciones:
+Dentro de Cuentas hay dos pestañas:
 
-- **Hogar**: gastos grupales del hogar (arriendo, gastos comunes, luz, agua,
-  gas, empleada doméstica, otro). Sin split entre personas — solo se
+- **Hogar**: gastos grupales del hogar. Categorías: Vivienda, Salud y
+  bienestar, Servicios básicos, Otros. Sin split entre personas — solo se
   trackea pagado/pendiente/vencido.
-- **Personal**: cada persona (Sebastián, Ignacio, Diego) lleva sus propios
-  gastos (gimnasio, comida, suscripciones, seguros, TAG, dividendo de otro
-  departamento, cuenta de teléfono, etc.), independientes entre sí.
+- **Personal**: cada persona (Sebastián, Ignacio, Diego, elegibles con los
+  pills de arriba) lleva sus propios gastos (gimnasio, comida,
+  suscripciones, seguros, TAG, dividendo de departamentos, cuenta de
+  teléfono, etc.), independientes entre sí. Todavía no tiene cuentas
+  recurrentes precargadas (pendiente).
 
 Ambas comparten el mismo componente de dashboard (KPIs de total/pagado/
 pendiente/vencido, barra de progreso, próximos vencimientos, gasto por
-categoría, tabla filtrable con alta/edición/borrado/marcar pagada) — internamente
-son 4 "scopes" (`hogar` + un `personal-<nombre>` por persona) manejados por
-el mismo backend genérico en `netlify/functions/cuentas.mjs`.
+categoría, tabla filtrable con alta/edición/borrado/marcar pagada) —
+internamente son 4 "scopes" (`hogar` + un `personal-<nombre>` por persona)
+manejados por el mismo backend genérico en `netlify/functions/cuentas.mjs`.
+No tienen método de pago (se sacó ese campo, no aportaba nada al análisis).
 
-Cada scope lleva su propio historial por mes. Al crear un mes nuevo se
-puede tildar "Copiar cuentas del mes anterior" para no tener que
-reescribir arriendo/luz/gas cada vez — se copian con la fecha corrida al
-mes nuevo y el estado reseteado a pendiente.
+**Los meses no se crean desde la UI.** Hogar viene con los 6 meses de
+julio a diciembre 2026 precargados (ver siguiente sección), cada uno con
+las cuentas recurrentes en monto $0 — el usuario solo tiene que editar el
+monto real de cada mes (botón ✏️ en la tabla) y marcar como pagada cuando
+corresponda. Al abrir Cuentas se selecciona automáticamente el mes actual
+si existe. Se puede además agregar cualquier cuenta adicional que se
+necesite con "+ Nueva cuenta".
+
+Cuentas recurrentes precargadas en Hogar:
+
+- Arriendo (Vivienda)
+- Gastos comunes (Vivienda)
+- Luz, Agua, Gas, Empleada doméstica (Servicios básicos)
+
+### Precargar las cuentas de Hogar (una sola vez)
+
+```bash
+curl -X POST https://<sitio>.netlify.app/api/seed-cuentas \
+  -H 'Content-Type: application/json' \
+  -d '{"confirm": true}'
+```
+
+Es no destructivo (nunca sobreescribe un mes que ya tenga datos) e
+idempotente (se puede correr de nuevo sin duplicar nada). Una vez
+confirmado que los 6 meses aparecen bien en Hogar, se puede borrar
+`netlify/functions/seed-cuentas.mjs`.
 
 ## Desarrollo local
 

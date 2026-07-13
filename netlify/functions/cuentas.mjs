@@ -81,9 +81,7 @@ function isValidItemsInput(items) {
         it.monto >= 0 &&
         typeof it.fecha === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(it.fecha) &&
-        typeof it.pagado === "boolean" &&
-        typeof it.metodo === "string" &&
-        it.metodo.trim().length > 0
+        typeof it.pagado === "boolean"
     )
   );
 }
@@ -141,7 +139,6 @@ async function createMonth(store, scope, req) {
         monto: it.monto,
         fecha: shiftMonth(it.fecha, body.month),
         pagado: false,
-        metodo: it.metodo,
       }));
     }
   }

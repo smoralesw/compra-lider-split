@@ -146,16 +146,27 @@
     width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;
     font-family:inherit;background:#fff;color:var(--ink);
   }
-  .dialog-form .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:12px;font-weight:400;}
-  .dialog-form .checkbox-row[hidden]{display:none;}
-  .dialog-form .checkbox-row input[type=checkbox]{width:auto;}
-
-  .cuenta-subtabs{display:flex;gap:8px;margin-bottom:14px;}
-  .cuenta-subtab{
-    background:#fff;border:1px solid var(--border);border-radius:100px;padding:7px 16px;
-    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+  .app-shell{display:flex;align-items:flex-start;}
+  .sidebar{
+    width:190px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);
+    padding:20px 12px;box-sizing:border-box;overflow:hidden;transition:width .15s ease,padding .15s ease;
   }
-  .cuenta-subtab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .sidebar.collapsed{width:0;padding:20px 0;border-right:none;}
+  .sidebar-nav{display:flex;flex-direction:column;gap:4px;}
+  .sidebar-link{
+    display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;
+    border-radius:8px;padding:10px 12px;font-size:13.5px;font-weight:600;color:var(--muted);
+    cursor:pointer;white-space:nowrap;
+  }
+  .sidebar-link:hover:not(.active){background:var(--bg);}
+  .sidebar-link.active{background:var(--navy);color:#fff;}
+  .app-main{flex:1;min-width:0;}
+  .sidebar-toggle-btn{
+    border:1px solid var(--border);background:#fff;border-radius:6px;
+    width:34px;height:34px;cursor:pointer;font-size:15px;color:var(--navy);
+    margin:24px 0 0 24px;
+  }
+  .sidebar-toggle-btn:hover{background:#f1ede3;}
 
   .cuenta-person-pills{display:flex;gap:8px;margin-bottom:14px;}
   .cuenta-person-pills[hidden]{display:none;}
@@ -243,32 +254,37 @@
   <img src="assets/logo-hero.jpg" alt="Carmencita Finance Manager — Barrio El Golf, Las Condes, Santiago">
 </header>
 
-<nav class="page-tabs">
-  <div class="page-tabs-inner">
-    <button type="button" class="page-tab" data-page-tab="cuentas">Cuentas</button>
-    <button type="button" class="page-tab active" data-page-tab="pedidos">Pedidos</button>
-  </div>
-</nav>
+<div class="app-shell">
+  <aside id="sidebar" class="sidebar">
+    <nav class="sidebar-nav">
+      <button type="button" class="sidebar-link" data-page-tab="cuentas">🧾 Cuentas</button>
+      <button type="button" class="sidebar-link active" data-page-tab="pedidos">🛒 Pedidos</button>
+    </nav>
+  </aside>
 
-<div class="wrap">
-  <section id="page-cuentas" class="page-panel" hidden>
-    <div class="cuenta-subtabs">
-      <button type="button" class="cuenta-subtab active" data-cuenta-sub="hogar">Hogar</button>
-      <button type="button" class="cuenta-subtab" data-cuenta-sub="personal">Personal</button>
-    </div>
+  <main class="app-main">
+    <button type="button" class="sidebar-toggle-btn" id="sidebar-toggle" title="Abrir/cerrar menú" aria-label="Abrir/cerrar menú">☰</button>
 
-    <div id="cuenta-person-pills" class="cuenta-person-pills" hidden>
-      <button type="button" class="cuenta-pill active" data-person="sebastian">Sebastián</button>
-      <button type="button" class="cuenta-pill" data-person="ignacio">Ignacio</button>
-      <button type="button" class="cuenta-pill" data-person="diego">Diego</button>
-    </div>
+    <div class="wrap">
+      <section id="page-cuentas" class="page-panel" hidden>
+        <nav class="page-tabs">
+          <div class="page-tabs-inner">
+            <button type="button" class="page-tab active" data-cuenta-sub="hogar">Hogar</button>
+            <button type="button" class="page-tab" data-cuenta-sub="personal">Personal</button>
+          </div>
+        </nav>
 
-    <div class="cuenta-month-row">
-      <select id="cuenta-month-select"></select>
-      <button type="button" class="btn-secondary" id="cuenta-new-month-btn">+ Nuevo mes</button>
-    </div>
+        <div id="cuenta-person-pills" class="cuenta-person-pills" hidden>
+          <button type="button" class="cuenta-pill active" data-person="sebastian">Sebastián</button>
+          <button type="button" class="cuenta-pill" data-person="ignacio">Ignacio</button>
+          <button type="button" class="cuenta-pill" data-person="diego">Diego</button>
+        </div>
 
-    <p class="muted" id="cuenta-no-months" hidden>Todavía no hay meses cargados para esta sección. Crea el primero con "+ Nuevo mes".</p>
+        <div class="cuenta-month-row">
+          <select id="cuenta-month-select"></select>
+        </div>
+
+        <p class="muted" id="cuenta-no-months" hidden>Todavía no hay datos cargados para esta sección.</p>
 
     <div id="cuenta-dashboard" hidden>
       <div class="kpi-grid">
@@ -312,7 +328,6 @@
               <th style="text-align:right;">Monto</th>
               <th class="center">Vencimiento</th>
               <th class="center">Estado</th>
-              <th class="center">Método</th>
               <th></th>
             </tr>
           </thead>
@@ -345,6 +360,8 @@
 
     <div id="orders-list"><p class="muted">Cargando pedidos…</p></div>
   </section>
+    </div>
+  </main>
 </div>
 
 <dialog id="new-order-dialog">
@@ -426,24 +443,8 @@
   </div>
 </dialog>
 
-<dialog id="cuenta-month-dialog">
-  <h2>Nuevo mes</h2>
-  <div class="dialog-form">
-    <label for="cuenta-month-input">Mes</label>
-    <input type="month" id="cuenta-month-input">
-    <label class="checkbox-row" id="cuenta-copy-label">
-      <input type="checkbox" id="cuenta-copy-checkbox">
-      Copiar cuentas del mes anterior
-    </label>
-  </div>
-  <div class="dialog-actions">
-    <button type="button" class="btn-secondary" data-close>Cancelar</button>
-    <button type="button" class="btn-gold" id="cuenta-month-create">Crear mes</button>
-  </div>
-</dialog>
-
 <dialog id="cuenta-item-dialog">
-  <h2>Nueva cuenta</h2>
+  <h2 id="cuenta-item-dialog-title">Nueva cuenta</h2>
   <div class="dialog-form">
     <label for="cuenta-f-nombre">Nombre</label>
     <input type="text" id="cuenta-f-nombre" placeholder="Ej: Arriendo">
@@ -453,13 +454,6 @@
     <input type="number" id="cuenta-f-monto" min="0" step="1" placeholder="0">
     <label for="cuenta-f-fecha">Vencimiento</label>
     <input type="date" id="cuenta-f-fecha">
-    <label for="cuenta-f-metodo">Método</label>
-    <select id="cuenta-f-metodo">
-      <option>Débito automático</option>
-      <option>Transferencia</option>
-      <option>Tarjeta</option>
-      <option>Efectivo</option>
-    </select>
   </div>
   <div class="dialog-actions">
     <button type="button" class="btn-secondary" data-close>Cancelar</button>
@@ -671,13 +665,13 @@ function renderManualWishlistImport(){
   `).join("");
 }
 
-// --- page tabs (Cuentas / Pedidos) ---
+// --- sidebar (Cuentas / Pedidos) ---
 
 let cuentasInitialized = false;
 
-document.querySelectorAll(".page-tab").forEach(btn => {
+document.querySelectorAll(".sidebar-link").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".page-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".sidebar-link").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     const tab = btn.dataset.pageTab;
     document.getElementById("page-cuentas").hidden = tab !== "cuentas";
@@ -687,6 +681,10 @@ document.querySelectorAll(".page-tab").forEach(btn => {
       initCuentas();
     }
   });
+});
+
+document.getElementById("sidebar-toggle").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("collapsed");
 });
 
 // --- dialog / tabs ---
@@ -948,10 +946,10 @@ document.getElementById("paste-create").addEventListener("click", async () => {
 // --- cuentas (Hogar / Personal) ---
 
 const API_CUENTAS = "/api/cuentas";
-const CUENTA_CATEGORIES_HOGAR = ["Arriendo", "Gastos comunes", "Luz", "Agua", "Gas", "Empleada doméstica", "Otro"];
+const CUENTA_CATEGORIES_HOGAR = ["Vivienda", "Salud y bienestar", "Servicios básicos", "Otros"];
 const CUENTA_CATEGORIES_PERSONAL = [
   "Gimnasio", "Comida", "Suscripciones", "Seguro auto", "Seguro otros",
-  "TAG", "Dividendo otro depto", "Cuenta teléfono", "Otro",
+  "TAG", "Dividendo departamentos", "Cuenta teléfono", "Otro",
 ];
 const CUENTA_SCOPES = {
   "hogar": { label: "Hogar", categories: CUENTA_CATEGORIES_HOGAR },
@@ -1004,14 +1002,16 @@ async function loadCuentaMonths(){
     cuentaMonths = [];
   }
 
-  renderCuentaMonthSelect();
-
   if(cuentaMonths.length){
-    currentCuentaMonth = cuentaMonths[0].month;
+    const todayMonth = todayLocalISODate().slice(0, 7);
+    const currentMonthEntry = cuentaMonths.find(m => m.month === todayMonth);
+    currentCuentaMonth = currentMonthEntry ? currentMonthEntry.month : cuentaMonths[0].month;
+    renderCuentaMonthSelect();
     await loadCuentaItems();
   }else{
     currentCuentaMonth = null;
     cuentaItems = [];
+    renderCuentaMonthSelect();
     renderCuentaDashboard();
   }
 
@@ -1115,9 +1115,9 @@ function renderCuentaDashboard(){
       <td class="money">${fmt(it.monto)}</td>
       <td class="center">${fmtCuentaDate(it.fecha)}</td>
       <td class="center">${cuentaEstadoBadge(it.estado)}</td>
-      <td class="center">${escapeHtml(it.metodo)}</td>
       <td class="center">
         <div class="cuenta-row-actions">
+          <button type="button" class="todos-btn" data-edit="${escapeHtml(it.id)}" title="Editar">✏️</button>
           <button type="button" class="todos-btn" data-toggle="${escapeHtml(it.id)}" title="${it.pagado ? "Marcar como pendiente" : "Marcar como pagado"}">${it.pagado ? "↩" : "✓"}</button>
           <button type="button" class="todos-btn" data-delete="${escapeHtml(it.id)}" title="Eliminar">✕</button>
         </div>
@@ -1125,6 +1125,12 @@ function renderCuentaDashboard(){
     </tr>
   `).join("");
 
+  document.querySelectorAll("#cuenta-table-body [data-edit]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = cuentaItems.find(it => it.id === btn.dataset.edit);
+      if(item) openCuentaItemDialog(item);
+    });
+  });
   document.querySelectorAll("#cuenta-table-body [data-toggle]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const next = cuentaItems.map(it => it.id === btn.dataset.toggle ? {...it, pagado: !it.pagado} : it);
@@ -1140,9 +1146,9 @@ function renderCuentaDashboard(){
   });
 }
 
-document.querySelectorAll(".cuenta-subtab").forEach(btn => {
+document.querySelectorAll(".page-tab[data-cuenta-sub]").forEach(btn => {
   btn.addEventListener("click", async () => {
-    document.querySelectorAll(".cuenta-subtab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".page-tab[data-cuenta-sub]").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     currentCuentaSubtab = btn.dataset.cuentaSub;
     document.getElementById("cuenta-person-pills").hidden = currentCuentaSubtab !== "personal";
@@ -1180,82 +1186,50 @@ document.getElementById("cuenta-search").addEventListener("input", (e) => {
   renderCuentaDashboard();
 });
 
-const cuentaMonthDialog = document.getElementById("cuenta-month-dialog");
-
-document.getElementById("cuenta-new-month-btn").addEventListener("click", () => {
-  document.getElementById("cuenta-month-input").value = "";
-  const hasMonths = cuentaMonths.length > 0;
-  document.getElementById("cuenta-copy-checkbox").checked = hasMonths;
-  document.getElementById("cuenta-copy-label").hidden = !hasMonths;
-  cuentaMonthDialog.showModal();
-});
-
-document.getElementById("cuenta-month-create").addEventListener("click", async () => {
-  const month = document.getElementById("cuenta-month-input").value;
-  if(!month){
-    alert("Elige un mes.");
-    return;
-  }
-  const copyFrom = (document.getElementById("cuenta-copy-checkbox").checked && cuentaMonths[0])
-    ? cuentaMonths[0].month
-    : undefined;
-
-  const res = await fetch(`${API_CUENTAS}/${currentCuentaScope}`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({month, copyFrom}),
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok){
-    alert(data.error || "No se pudo crear el mes.");
-    return;
-  }
-
-  cuentaMonthDialog.close();
-  await loadCuentaMonths();
-  document.getElementById("cuenta-month-select").value = month;
-  currentCuentaMonth = month;
-  await loadCuentaItems();
-});
-
 const cuentaItemDialog = document.getElementById("cuenta-item-dialog");
+let cuentaEditingId = null;
 
-document.getElementById("cuenta-new-btn").addEventListener("click", () => {
+function openCuentaItemDialog(item){
   if(!currentCuentaMonth){
-    alert("Primero crea un mes.");
+    alert("Esta sección todavía no tiene datos cargados.");
     return;
   }
-  document.getElementById("cuenta-f-nombre").value = "";
-  document.getElementById("cuenta-f-monto").value = "";
-  document.getElementById("cuenta-f-fecha").value = "";
+  cuentaEditingId = item ? item.id : null;
+  document.getElementById("cuenta-item-dialog-title").textContent = item ? "Editar cuenta" : "Nueva cuenta";
+  document.getElementById("cuenta-f-nombre").value = item ? item.nombre : "";
+  document.getElementById("cuenta-f-monto").value = item ? item.monto : "";
+  document.getElementById("cuenta-f-fecha").value = item ? item.fecha : "";
   const categorySelect = document.getElementById("cuenta-f-categoria");
   categorySelect.innerHTML = CUENTA_SCOPES[currentCuentaScope].categories
-    .map(c => `<option>${escapeHtml(c)}</option>`).join("");
+    .map(c => `<option ${item && item.categoria === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("");
   cuentaItemDialog.showModal();
+}
+
+document.getElementById("cuenta-new-btn").addEventListener("click", () => {
+  openCuentaItemDialog(null);
 });
 
 document.getElementById("cuenta-item-save").addEventListener("click", async () => {
   const nombre = document.getElementById("cuenta-f-nombre").value.trim();
   const monto = Number(document.getElementById("cuenta-f-monto").value);
   const fecha = document.getElementById("cuenta-f-fecha").value;
+  const categoria = document.getElementById("cuenta-f-categoria").value;
   if(!nombre || !fecha || !(monto >= 0)){
     alert("Completa nombre, monto y fecha de vencimiento.");
     return;
   }
-  const nuevo = {
-    id: crypto.randomUUID(),
-    nombre,
-    categoria: document.getElementById("cuenta-f-categoria").value,
-    monto,
-    fecha,
-    pagado: false,
-    metodo: document.getElementById("cuenta-f-metodo").value,
-  };
-  const ok = await saveCuentaItems([...cuentaItems, nuevo]);
+  const next = cuentaEditingId
+    ? cuentaItems.map(it => it.id === cuentaEditingId ? {...it, nombre, categoria, monto, fecha} : it)
+    : [...cuentaItems, {id: crypto.randomUUID(), nombre, categoria, monto, fecha, pagado: false}];
+  const ok = await saveCuentaItems(next);
   if(ok){
     cuentaItemDialog.close();
   }
 });
+
+if(window.innerWidth <= 700){
+  document.getElementById("sidebar").classList.add("collapsed");
+}
 
 loadOrders();
 loadWishlist();
