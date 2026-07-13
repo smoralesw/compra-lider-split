@@ -55,10 +55,11 @@ export default async (req) => {
   const store = getStore(STORE_NAME);
   const created = [];
   const skipped = [];
+  const createdItems = {};
 
   for (const month of MONTHS) {
     const existing = await store.get(`cuentas/${SCOPE}/${month}/items`, { type: "json" });
-    if (existing) {
+    if (Array.isArray(existing) && existing.length > 0) {
       skipped.push(month);
       continue;
     }
@@ -74,16 +75,16 @@ export default async (req) => {
 
     await store.setJSON(`cuentas/${SCOPE}/${month}/items`, items);
     created.push(month);
+    createdItems[month] = items;
   }
 
   const index = (await store.get(`cuentas/${SCOPE}/index`, { type: "json" })) || [];
   const nextIndex = [...index];
   for (const month of created) {
-    const items = await store.get(`cuentas/${SCOPE}/${month}/items`, { type: "json" });
     const entry = {
       month,
       label: monthLabel(month),
-      itemCount: items.length,
+      itemCount: createdItems[month].length,
       total: 0,
       pagado: 0,
       pendiente: 0,
