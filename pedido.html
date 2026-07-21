@@ -217,6 +217,7 @@ let orderMeta = null;
 let items = [];
 let state = {};
 let saving = false;
+let pendingSave = false;
 let lastSavedStateJSON = "{}";
 
 function fmt(n){
@@ -248,9 +249,22 @@ async function fetchRemoteState(){
 }
 
 async function pushState(){
+  // Solo un POST a la vez: si ya hay uno en vuelo, marcamos que hace falta
+  // otro guardado y salimos. El bloque finally de ese guardado en curso se
+  // encarga de disparar el siguiente apenas termine, con el estado más
+  // reciente. Esto evita que dos POST simultáneos lleguen desordenados al
+  // servidor y uno más viejo pise a uno más nuevo (eso es lo que hacía que
+  // un casillero recién marcado se destildara solo unos segundos después).
+  if(saving){
+    pendingSave = true;
+    return;
+  }
+
   const body = JSON.stringify(state);
   if(body === lastSavedStateJSON) return;
+
   saving = true;
+  pendingSave = false;
   setSyncStatus("Guardando...");
   try{
     await fetch(API_ORDER + "/state", {
@@ -262,8 +276,13 @@ async function pushState(){
     setSyncStatus("Guardado ✓ · sincronizado con Ignacio y Diego");
   }catch(e){
     setSyncStatus("No se pudo guardar (revisa la conexión) — reintentando...");
+    pendingSave = true;
   }finally{
     saving = false;
+    if(pendingSave){
+      pendingSave = false;
+      pushState();
+    }
   }
 }
 
