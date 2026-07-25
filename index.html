@@ -367,29 +367,12 @@
 <dialog id="new-order-dialog">
   <h2>Nuevo pedido</h2>
   <div class="tabs">
-    <button type="button" class="tab-btn active" data-tab="manual">Manual</button>
-    <button type="button" class="tab-btn" data-tab="photo">Desde foto</button>
+    <button type="button" class="tab-btn active" data-tab="photo">Desde foto</button>
     <button type="button" class="tab-btn" data-tab="paste">Pegar texto</button>
+    <button type="button" class="tab-btn" data-tab="manual">Manual</button>
   </div>
 
-  <div id="tab-manual" class="tab-panel">
-    <label for="manual-name">Nombre</label>
-    <input id="manual-name" type="text" placeholder="Ej: Compra Jumbo semana 30">
-    <label for="manual-date">Fecha</label>
-    <input id="manual-date" type="date">
-
-    <div id="manual-wishlist-section" hidden>
-      <label>Importar de la wishlist</label>
-      <div id="manual-wishlist-list" class="wishlist-import-list"></div>
-    </div>
-
-    <div class="dialog-actions">
-      <button type="button" class="btn-secondary" data-close>Cancelar</button>
-      <button type="button" class="btn-gold" id="manual-create">Crear pedido</button>
-    </div>
-  </div>
-
-  <div id="tab-photo" class="tab-panel" hidden>
+  <div id="tab-photo" class="tab-panel">
     <label for="photo-input">Foto del pedido o boleta</label>
     <input id="photo-input" type="file" accept="image/*" capture="environment">
     <p class="muted" id="photo-status"></p>
@@ -445,6 +428,23 @@
     <div class="dialog-actions">
       <button type="button" class="btn-secondary" data-close>Cancelar</button>
       <button type="button" class="btn-gold" id="paste-create" disabled>Guardar pedido</button>
+    </div>
+  </div>
+
+  <div id="tab-manual" class="tab-panel" hidden>
+    <label for="manual-name">Nombre</label>
+    <input id="manual-name" type="text" placeholder="Ej: Compra Jumbo semana 30">
+    <label for="manual-date">Fecha</label>
+    <input id="manual-date" type="date">
+
+    <div id="manual-wishlist-section" hidden>
+      <label>Importar de la wishlist</label>
+      <div id="manual-wishlist-list" class="wishlist-import-list"></div>
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-secondary" data-close>Cancelar</button>
+      <button type="button" class="btn-gold" id="manual-create">Crear pedido</button>
     </div>
   </div>
 </dialog>
@@ -745,10 +745,10 @@ dialog.addEventListener("close", () => {
   document.getElementById("paste-create").disabled = true;
   pasteItems = [];
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.querySelector('.tab-btn[data-tab="manual"]').classList.add("active");
-  document.getElementById("tab-manual").hidden = false;
-  document.getElementById("tab-photo").hidden = true;
+  document.querySelector('.tab-btn[data-tab="photo"]').classList.add("active");
+  document.getElementById("tab-photo").hidden = false;
   document.getElementById("tab-paste").hidden = true;
+  document.getElementById("tab-manual").hidden = true;
 });
 
 document.querySelectorAll(".tab-btn").forEach(btn => {
