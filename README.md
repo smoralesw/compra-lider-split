@@ -14,8 +14,8 @@ misma selección en tiempo real.
   (se puede abrir/cerrar) para navegar entre **Cuentas** (gastos mensuales,
   con pestañas Hogar/Personal, ver más abajo) y **Pedidos** (wishlist
   compartida + lista de pedidos con nombre/fecha/total, crear uno nuevo a
-  mano, subiendo una foto o pegando texto — todo interpretado con IA, ver
-  más abajo — y eliminar pedidos existentes).
+  mano, subiendo una foto (interpretada con IA) o pegando texto en un
+  formato fijo sin IA — ver más abajo — y eliminar pedidos existentes).
 - `pedido.html` — vista de detalle de un pedido puntual, parametrizada por
   `?id=<id>` (ej. `pedido.html?id=lider-2026-07-10`). Aquí vive la tabla de
   productos con checkboxes, los totales por persona, la edición de
@@ -28,9 +28,6 @@ misma selección en tiempo real.
   datos y endpoints abajo).
 - `netlify/functions/parse-receipt.mjs` — recibe una foto y usa la API de
   Anthropic (Claude, con visión) para extraer los productos automáticamente.
-- `netlify/functions/parse-text.mjs` — recibe un texto pegado (lista, correo
-  de confirmación, carrito copiado, etc.) y usa Claude para extraer los
-  productos, mismo patrón que `parse-receipt.mjs` pero sin imagen.
 - `netlify/functions/wishlist.mjs` — CRUD simple de la wishlist compartida
   (ver esquema y endpoints abajo).
 - `netlify/functions/cuentas.mjs` — CRUD de cuentas mensuales (Hogar y
@@ -76,9 +73,6 @@ misma selección en tiempo real.
   `{items: [{name, qty, unitPrice}]}` extraídos de la foto por Claude.
   Requiere `ANTHROPIC_API_KEY` configurada (ver abajo); si falta, responde
   con un error explicando qué falta, sin afectar el resto de la app.
-- `POST /api/parse-text` — body `{text: "<pedido pegado>"}`, devuelve
-  `{items: [{name, qty, unitPrice}]}` extraídos por Claude. Misma
-  dependencia de `ANTHROPIC_API_KEY` que `/api/parse-receipt`.
 - `GET /api/wishlist` — lista completa de la wishlist.
 - `POST /api/wishlist` — agrega un item. Body: `{text, addedBy}` (`addedBy`
   debe ser `sebastian`, `ignacio` o `diego`).
@@ -110,19 +104,38 @@ misma selección en tiempo real.
   llegue al servidor (last-write-wins). Para el uso previsto (3 personas
   coordinando una compra puntual) no debería ser un problema real.
 
-## Cargar un pedido por foto o pegando texto
+## Cargar un pedido por foto
 
-Ambas vías requieren una variable de entorno `ANTHROPIC_API_KEY` configurada
-en Netlify (Site settings → Environment variables). Sin esa key, todo el
-resto de la app funciona igual — solo falla, con un mensaje claro, la
-extracción automática de productos.
+Requiere una variable de entorno `ANTHROPIC_API_KEY` configurada en Netlify
+(Site settings → Environment variables). Sin esa key, todo el resto de la
+app funciona igual — solo falla, con un mensaje claro, la extracción
+automática de productos desde la foto.
 
 La imagen se reduce y comprime en el navegador (`<canvas>`, máx ~1600px,
 JPEG calidad 0.8) antes de subirla, para no pegar contra límites de tamaño
 de las funciones de Netlify y para bajar costo/latencia de la llamada a la
-API. En ambos casos (foto o texto pegado), los productos que devuelve Claude
-se muestran en una tabla editable antes de guardar el pedido, así se pueden
-corregir errores de lectura.
+API. Los productos que devuelve Claude se muestran en una tabla editable
+antes de guardar el pedido, así se pueden corregir errores de lectura.
+
+## Cargar un pedido pegando texto (sin IA propia)
+
+Esta vía **no usa `ANTHROPIC_API_KEY`** ni ninguna llamada a un servidor —
+todo el parseo pasa en el navegador. En vez de que la app llame a una IA,
+el usuario copia un prompt con el botón "📋 Copiar prompt para IA", lo pega
+en la IA que prefiera (ChatGPT, Claude, Gemini, la que sea) junto con su
+boleta o pedido, y pega el resultado de vuelta en la app.
+
+El formato esperado es una línea por producto:
+
+```
+nombre del producto | cantidad | precio unitario
+```
+
+El parser (`parsePipeDelimitedText` en `index.html`) separa por `|`, tolera
+que el precio venga con `$` o puntos de miles, y **ignora en silencio**
+cualquier línea que no tenga exactamente 3 campos (preámbulo de la IA,
+líneas en blanco, etc.) — muestra cuántas líneas se leyeron bien y cuántas
+se ignoraron, y el usuario revisa/edita en la misma tabla antes de guardar.
 
 ## Wishlist
 

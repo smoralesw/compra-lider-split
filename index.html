@@ -415,10 +415,16 @@
   </div>
 
   <div id="tab-paste" class="tab-panel" hidden>
-    <label for="paste-input">Pega el pedido (lista, correo de confirmación, carrito copiado, etc.)</label>
-    <textarea id="paste-input" rows="6" placeholder="Ej:&#10;Leche Entera 1L  x2  $990&#10;Pan Hallulla 9 un  $2.490"></textarea>
+    <p class="muted" style="margin:0 0 10px;">
+      Copiá el prompt, pegalo en tu IA favorita junto con tu boleta o pedido, y después pegá acá el resultado.
+    </p>
+    <div class="dialog-actions" style="justify-content:flex-start;margin:0 0 14px;">
+      <button type="button" class="btn-secondary" id="paste-copy-prompt">📋 Copiar prompt para IA</button>
+    </div>
+    <label for="paste-input">Resultado de tu IA (formato: nombre | cantidad | precio)</label>
+    <textarea id="paste-input" rows="6" placeholder="Leche Entera 1L | 2 | 990&#10;Pan Hallulla 9 un | 1 | 2490"></textarea>
     <div class="dialog-actions" style="justify-content:flex-start;margin-top:8px;">
-      <button type="button" class="btn-secondary" id="paste-analyze">Analizar texto</button>
+      <button type="button" class="btn-secondary" id="paste-analyze">Convertir</button>
     </div>
     <p class="muted" id="paste-status"></p>
 
@@ -464,10 +470,27 @@
 <script>
 const API_ORDERS = "/api/orders";
 const API_PARSE = "/api/parse-receipt";
-const API_PARSE_TEXT = "/api/parse-text";
 const API_WISHLIST = "/api/wishlist";
 const MAX_DIM = 1600;
 const PEOPLE_LABELS = {sebastian:"Sebastián", ignacio:"Ignacio", diego:"Diego"};
+
+const PASTE_AI_PROMPT = `Convierte el siguiente pedido o boleta de supermercado en una lista de productos.
+
+Responde SOLO con una línea por producto, en este formato exacto (sin encabezados, sin texto adicional, sin markdown):
+
+nombre del producto | cantidad | precio unitario en pesos chilenos (solo el número, sin puntos ni símbolos)
+
+Reglas:
+- Si ves el precio total de la línea y la cantidad pero no el precio unitario, calculá el precio unitario dividiendo el total entre la cantidad.
+- Si una línea no trae cantidad, usá 1.
+- Ignorá líneas que no sean productos (totales, subtotales, direcciones, folios, encabezados, etc.).
+
+Ejemplo de salida:
+Leche Entera 1L | 2 | 990
+Pan Hallulla 9 un | 1 | 2490
+
+Pega tu pedido o boleta a continuación:
+`;
 
 let currentOrders = [];
 let currentWishlist = [];
@@ -898,39 +921,78 @@ document.getElementById("paste-add-row").addEventListener("click", () => {
   renderPasteItems();
 });
 
-document.getElementById("paste-analyze").addEventListener("click", async () => {
-  const text = document.getElementById("paste-input").value.trim();
-  const statusEl = document.getElementById("paste-status");
-  if(!text){
-    statusEl.textContent = "Pega primero el texto del pedido.";
-    return;
-  }
-  document.getElementById("paste-review").hidden = true;
-  document.getElementById("paste-create").disabled = true;
-  statusEl.textContent = "Analizando con IA…";
+document.getElementById("paste-copy-prompt").addEventListener("click", async () => {
+  const btn = document.getElementById("paste-copy-prompt");
+  const original = btn.textContent;
   try{
-    const res = await fetch(API_PARSE_TEXT, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({text}),
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok){
-      statusEl.textContent = data.error || "No se pudo analizar el texto.";
+    await navigator.clipboard.writeText(PASTE_AI_PROMPT);
+    btn.textContent = "✅ Copiado";
+  }catch(e){
+    btn.textContent = "⚠️ No se pudo copiar";
+  }
+  setTimeout(()=>{ btn.textContent = original; }, 2000);
+});
+
+// Convierte un texto crudo a número, aceptando que venga con separadores de
+// miles, símbolo de moneda, etc. — por si la IA no siguió el formato al pie
+// de la letra. allowDecimal se usa para cantidad (puede venir en kg).
+function cleanNumber(str, allowDecimal){
+  const cleaned = allowDecimal ? str.replace(/[^\d.]/g, "") : str.replace(/[^\d]/g, "");
+  return cleaned === "" ? NaN : Number(cleaned);
+}
+
+// Formato esperado, una línea por producto: "nombre | cantidad | precio".
+// Cualquier línea que no calce (preámbulo de la IA, líneas en blanco, etc.)
+// se ignora en silencio y se cuenta en `skipped`.
+function parsePipeDelimitedText(text){
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const items = [];
+  let skipped = 0;
+
+  lines.forEach(line => {
+    const parts = line.split("|").map(p => p.trim());
+    if(parts.length !== 3){ skipped++; return; }
+
+    const [name, qtyStr, priceStr] = parts;
+    const qty = cleanNumber(qtyStr, true);
+    const unitPrice = cleanNumber(priceStr, false);
+
+    if(!name || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0){
+      skipped++;
       return;
     }
-    pasteItems = (data.items || []).map(it => ({
-      id: crypto.randomUUID(), name: it.name, qty: it.qty, unitPrice: it.unitPrice,
-    }));
-    statusEl.textContent = pasteItems.length
-      ? `${pasteItems.length} producto(s) detectado(s). Revisá antes de guardar.`
-      : "No se detectaron productos. Puedes agregarlos a mano.";
-    renderPasteItems();
-    document.getElementById("paste-review").hidden = false;
-    document.getElementById("paste-create").disabled = false;
-  }catch(err){
-    statusEl.textContent = "Error al analizar el texto.";
+    items.push({id: crypto.randomUUID(), name, qty, unitPrice});
+  });
+
+  return {items, skipped};
+}
+
+document.getElementById("paste-analyze").addEventListener("click", () => {
+  const text = document.getElementById("paste-input").value.trim();
+  const statusEl = document.getElementById("paste-status");
+  document.getElementById("paste-review").hidden = true;
+  document.getElementById("paste-create").disabled = true;
+
+  if(!text){
+    statusEl.textContent = "Pega primero el resultado de tu IA.";
+    return;
   }
+
+  const {items: parsed, skipped} = parsePipeDelimitedText(text);
+  pasteItems = parsed;
+
+  if(!pasteItems.length){
+    statusEl.textContent = 'No se pudo leer ningún producto. Verificá que el formato sea "nombre | cantidad | precio", una línea por producto.';
+    return;
+  }
+
+  statusEl.textContent = skipped
+    ? `${pasteItems.length} producto(s) detectado(s) (se ignoraron ${skipped} línea(s) que no calzaban con el formato). Revisá antes de guardar.`
+    : `${pasteItems.length} producto(s) detectado(s). Revisá antes de guardar.`;
+
+  renderPasteItems();
+  document.getElementById("paste-review").hidden = false;
+  document.getElementById("paste-create").disabled = false;
 });
 
 document.getElementById("paste-create").addEventListener("click", async () => {
