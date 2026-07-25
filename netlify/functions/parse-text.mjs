@@ -25,6 +25,13 @@ function isValidRequestBody(body) {
   );
 }
 
+// Claude is told to reply with raw JSON only, but sometimes wraps it in a
+// markdown code fence (```json ... ```) anyway — strip that before parsing.
+function stripMarkdownFence(text) {
+  const match = text.trim().match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return match ? match[1] : text.trim();
+}
+
 function isValidExtractedItems(items) {
   return (
     Array.isArray(items) &&
@@ -110,7 +117,7 @@ export default async (req) => {
 
   let items;
   try {
-    items = JSON.parse(responseText);
+    items = JSON.parse(stripMarkdownFence(responseText));
   } catch (e) {
     return json({ error: "Claude no devolvió un JSON válido. Probá de nuevo, o revisá el texto pegado.", raw: responseText }, 502);
   }
