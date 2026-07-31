@@ -81,15 +81,14 @@ function emptyState(items) {
   return state;
 }
 
-function isValidStateBody(body, validIds) {
-  if (!body || typeof body !== "object" || Array.isArray(body)) return false;
-  return Object.keys(body).every(
-    (rowId) =>
-      validIds.has(rowId) &&
-      body[rowId] &&
-      typeof body[rowId] === "object" &&
-      Object.keys(body[rowId]).every((k) => PEOPLE.includes(k)) &&
-      PEOPLE.every((p) => typeof body[rowId][p] === "boolean")
+function isValidStatePatch(body, validIds) {
+  return (
+    body &&
+    typeof body === "object" &&
+    typeof body.itemId === "string" &&
+    validIds.has(body.itemId) &&
+    PEOPLE.includes(body.person) &&
+    typeof body.checked === "boolean"
   );
 }
 
@@ -237,6 +236,12 @@ async function getState(store, id) {
   return json(state);
 }
 
+// Aplica el toggle de una sola celda (item x persona) en vez de recibir y
+// pisar el objeto de estado completo. Con un overwrite completo, un cliente
+// con una copia local apenas desactualizada (por polling o por su propio
+// guardado en curso) podía resucitar/borrar marcas de otra persona al
+// mandar su snapshot viejo entero; acotar el POST a una celda reduce la
+// ventana de carrera a un simple read-modify-write de un booleano.
 async function postState(store, id, req) {
   const items = await store.get(`orders/${id}/items`, { type: "json" });
   if (!items) return json({ error: "Order not found" }, 404);
@@ -245,12 +250,17 @@ async function postState(store, id, req) {
   if (error) return error;
 
   const validIds = new Set(items.map((it) => it.id));
-  if (!isValidStateBody(body, validIds)) {
-    return json({ error: "Invalid state shape" }, 400);
+  if (!isValidStatePatch(body, validIds)) {
+    return json({ error: "Invalid state patch shape" }, 400);
   }
 
-  await store.setJSON(`orders/${id}/state`, body);
-  return json({ ok: true });
+  const current = (await store.get(`orders/${id}/state`, { type: "json" })) || {};
+  const row = current[body.itemId] || { sebastian: false, ignacio: false, diego: false };
+  row[body.person] = body.checked;
+  current[body.itemId] = row;
+
+  await store.setJSON(`orders/${id}/state`, current);
+  return json({ ok: true, state: current });
 }
 
 export default async (req, context) => {

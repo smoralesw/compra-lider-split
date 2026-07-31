@@ -67,8 +67,12 @@ misma selección en tiempo real.
 - `PUT /api/orders/:id/items` — reemplaza el array de productos completo
   (agregar/editar/borrar = mandar el array nuevo entero). El servidor
   recalcula `total = qty * unitPrice` y no confía en lo que mande el cliente.
-- `GET/POST /api/orders/:id/state` — leer/guardar los checkboxes de un
+- `GET /api/orders/:id/state` — leer el grid completo de checkboxes de un
   pedido.
+- `POST /api/orders/:id/state` — marcar/desmarcar **una sola celda** (un
+  producto x una persona). Body: `{itemId, person, checked}`. El servidor
+  hace read-modify-write solo de esa celda contra `orders/<id>/state`, no
+  reemplaza el grid completo (ver sección de sincronización abajo).
 - `POST /api/parse-receipt` — body `{image: <base64>, mediaType}`, devuelve
   `{items: [{name, qty, unitPrice}]}` extraídos de la foto por Claude.
   Requiere `ANTHROPIC_API_KEY` configurada (ver abajo); si falta, responde
@@ -92,17 +96,33 @@ misma selección en tiempo real.
 
 ## Cómo funciona la sincronización de checkboxes
 
-- El cliente hace `POST /api/orders/:id/state` cada vez que cambia una
-  casilla.
-- Cada 5s (`POLL_MS`), el cliente hace `GET /api/orders/:id/state` y, si el
-  servidor tiene una versión distinta a la última que guardó, actualiza la
-  vista.
-- Si un `POST` falla (por ejemplo, sin conexión), se reintenta
-  automáticamente en el siguiente ciclo de polling.
-- **Limitación conocida:** no hay resolución de conflictos. Si dos personas
-  marcan casillas distintas casi al mismo tiempo, gana el último `POST` que
-  llegue al servidor (last-write-wins). Para el uso previsto (3 personas
-  coordinando una compra puntual) no debería ser un problema real.
+- Cada casilla se guarda **individualmente**: al tocar un checkbox, el
+  cliente manda `POST /api/orders/:id/state` con solo esa celda
+  (`{itemId, person, checked}`), no el grid completo. El servidor hace un
+  read-modify-write acotado a esa única celda.
+- Esto es deliberado: antes el cliente mandaba el grid completo en cada
+  guardado, así que si la copia local de alguien estaba un poco
+  desactualizada (por el polling de 5s, o por su propio guardado anterior
+  todavía en curso), su próximo click resucitaba/borraba marcas de otra
+  persona al pisar el documento entero con su snapshot viejo — eso era lo
+  que causaba que, al marcar varios productos seguidos, algunos se
+  destildaran solos o quedaran desfasados. Acotar cada guardado a una sola
+  celda reduce la ventana de conflicto a "dos personas tocando exactamente
+  la misma celda en el mismo instante", un caso mucho más raro y de impacto
+  mínimo (se resuelve solo en el siguiente guardado/polling).
+- El cliente lleva un registro de qué celdas tienen un cambio local sin
+  confirmar todavía (`pendingCells`/`inFlightCells` en `pedido.html`). El
+  polling (`GET` cada 5s) actualiza la vista celda por celda con lo que
+  diga el servidor, pero **nunca pisa una celda que tenga un cambio local
+  pendiente de confirmar** — así, aunque la respuesta del servidor tarde,
+  no se revierte visualmente lo que la persona acaba de marcar.
+- Si un `POST` de una celda falla (por ejemplo, sin conexión), esa celda
+  queda marcada como pendiente y se reintenta sola en el siguiente ciclo de
+  polling, sin afectar al resto del grid.
+- **Limitación conocida:** sigue sin haber resolución de conflictos para el
+  caso exacto de que dos personas marquen la *misma* celda casi al mismo
+  milisegundo — ahí gana el último `POST` que llegue (last-write-wins), pero
+  acotado a esa celda puntual, nunca al resto de la selección.
 
 ## Cargar un pedido por foto
 

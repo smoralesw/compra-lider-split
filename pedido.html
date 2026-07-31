@@ -216,9 +216,38 @@ const API_ORDER = "/api/orders/" + encodeURIComponent(orderId || "");
 let orderMeta = null;
 let items = [];
 let state = {};
-let saving = false;
-let pendingSave = false;
-let lastSavedStateJSON = "{}";
+
+// Celdas (item x persona) con un cambio local que el servidor todavía no
+// confirmó, y celdas con una request en curso ahora mismo. El polling nunca
+// pisa una celda que esté en cualquiera de estos dos sets, para no revertir
+// un check recién hecho con una respuesta del servidor que todavía no lo vio.
+const pendingCells = {};
+const inFlightCells = {};
+
+function isPending(rowid, person){
+  return !!(pendingCells[rowid] && pendingCells[rowid].has(person));
+}
+function isInFlight(rowid, person){
+  return !!(inFlightCells[rowid] && inFlightCells[rowid].has(person));
+}
+function addPending(rowid, person){
+  if(!pendingCells[rowid]) pendingCells[rowid] = new Set();
+  pendingCells[rowid].add(person);
+}
+function removePending(rowid, person){
+  if(pendingCells[rowid]) pendingCells[rowid].delete(person);
+}
+function addInFlight(rowid, person){
+  if(!inFlightCells[rowid]) inFlightCells[rowid] = new Set();
+  inFlightCells[rowid].add(person);
+}
+function removeInFlight(rowid, person){
+  if(inFlightCells[rowid]) inFlightCells[rowid].delete(person);
+}
+function clearSyncTracking(){
+  Object.keys(pendingCells).forEach(k => delete pendingCells[k]);
+  Object.keys(inFlightCells).forEach(k => delete inFlightCells[k]);
+}
 
 function fmt(n){
   return "$" + Math.round(n).toLocaleString("es-CL");
@@ -248,55 +277,70 @@ async function fetchRemoteState(){
   return isValidState(data) ? data : null;
 }
 
-async function pushState(){
-  // Solo un POST a la vez: si ya hay uno en vuelo, marcamos que hace falta
-  // otro guardado y salimos. El bloque finally de ese guardado en curso se
-  // encarga de disparar el siguiente apenas termine, con el estado más
-  // reciente. Esto evita que dos POST simultáneos lleguen desordenados al
-  // servidor y uno más viejo pise a uno más nuevo (eso es lo que hacía que
-  // un casillero recién marcado se destildara solo unos segundos después).
-  if(saving){
-    pendingSave = true;
-    return;
-  }
-
-  const body = JSON.stringify(state);
-  if(body === lastSavedStateJSON) return;
-
-  saving = true;
-  pendingSave = false;
+// Manda el valor actual de UNA celda (item x persona), nunca el grid
+// completo. Así, si dos personas marcan cosas distintas casi al mismo
+// tiempo, cada POST solo puede pisar esa misma celda puntual — no el
+// trabajo de la otra persona en otras filas/columnas.
+async function sendCell(rowid, person){
+  if(isInFlight(rowid, person)) return; // ya hay una request en curso para esta celda
+  addInFlight(rowid, person);
+  const checked = !!(state[rowid] && state[rowid][person]);
   setSyncStatus("Guardando...");
   try{
-    await fetch(API_ORDER + "/state", {
+    const res = await fetch(API_ORDER + "/state", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body
+      body: JSON.stringify({itemId: rowid, person, checked})
     });
-    lastSavedStateJSON = body;
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    removePending(rowid, person);
     setSyncStatus("Guardado ✓ · sincronizado con Ignacio y Diego");
   }catch(e){
     setSyncStatus("No se pudo guardar (revisa la conexión) — reintentando...");
-    pendingSave = true;
   }finally{
-    saving = false;
-    if(pendingSave){
-      pendingSave = false;
-      pushState();
-    }
+    removeInFlight(rowid, person);
+    // Si mientras esta request estaba en vuelo el usuario volvió a tocar la
+    // misma celda, el valor más reciente ya vive en `state`; reintentamos
+    // para que el servidor termine reflejando ese último valor.
+    if(isPending(rowid, person)) sendCell(rowid, person);
   }
+}
+
+function markCellChanged(rowid, person){
+  addPending(rowid, person);
+  sendCell(rowid, person);
+}
+
+function retryPendingCells(){
+  Object.keys(pendingCells).forEach(rowid => {
+    pendingCells[rowid].forEach(person => {
+      if(!isInFlight(rowid, person)) sendCell(rowid, person);
+    });
+  });
 }
 
 async function pollState(){
   try{
     const remote = await fetchRemoteState();
-    if(remote){
-      const remoteJSON = JSON.stringify(remote);
-      if(!saving && remoteJSON !== lastSavedStateJSON){
-        state = remote;
-        lastSavedStateJSON = remoteJSON;
-        render();
-        setSyncStatus("Actualizado desde el servidor");
-      }
+    if(!remote) return;
+
+    let changed = false;
+    items.forEach(item => {
+      PEOPLE.forEach(person => {
+        if(isPending(item.id, person) || isInFlight(item.id, person)) return;
+        const remoteVal = !!(remote[item.id] && remote[item.id][person]);
+        const localVal = !!(state[item.id] && state[item.id][person]);
+        if(remoteVal !== localVal){
+          if(!state[item.id]) state[item.id] = {sebastian:false, ignacio:false, diego:false};
+          state[item.id][person] = remoteVal;
+          changed = true;
+        }
+      });
+    });
+
+    if(changed){
+      render();
+      setSyncStatus("Actualizado desde el servidor");
     }
   }catch(e){
     setSyncStatus("Sin conexión con el servidor, mostrando última versión conocida");
@@ -422,7 +466,7 @@ function render(){
       if(!state[rowid]) state[rowid] = {sebastian:false, ignacio:false, diego:false};
       state[rowid][person] = cb.checked;
       render();
-      pushState();
+      markCellChanged(rowid, person);
     });
   });
 
@@ -435,7 +479,7 @@ function render(){
       PEOPLE.forEach(p => next[p] = !allChecked);
       state[rowid] = next;
       render();
-      pushState();
+      PEOPLE.forEach(p => markCellChanged(rowid, p));
     });
   });
 
@@ -508,7 +552,7 @@ document.getElementById("edit-save").addEventListener("click", async () => {
     }
     items = data.items;
     state = data.state;
-    lastSavedStateJSON = JSON.stringify(state);
+    clearSyncTracking(); // los items pueden haber cambiado de id; cualquier celda pendiente vieja ya no aplica
     document.getElementById("order-subtitle").textContent =
       `${orderMeta.date || ""} · ${items.length} producto${items.length === 1 ? "" : "s"}`;
     editDialog.close();
@@ -532,7 +576,6 @@ async function init(){
     orderMeta = {id: order.id, name: order.name, date: order.date};
     items = order.items || [];
     state = order.state || {};
-    lastSavedStateJSON = JSON.stringify(state);
 
     document.getElementById("order-title").textContent = order.name;
     document.getElementById("order-subtitle").textContent =
@@ -548,7 +591,7 @@ async function init(){
   }
 
   setInterval(async ()=>{
-    await pushState(); // reintenta cualquier cambio que haya fallado antes
+    retryPendingCells(); // reintenta cualquier celda que haya fallado antes
     await pollState();
   }, POLL_MS);
 }
