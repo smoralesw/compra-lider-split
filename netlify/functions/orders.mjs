@@ -237,11 +237,15 @@ async function getState(store, id) {
 }
 
 // Aplica el toggle de una sola celda (item x persona) en vez de recibir y
-// pisar el objeto de estado completo. Con un overwrite completo, un cliente
-// con una copia local apenas desactualizada (por polling o por su propio
-// guardado en curso) podía resucitar/borrar marcas de otra persona al
-// mandar su snapshot viejo entero; acotar el POST a una celda reduce la
-// ventana de carrera a un simple read-modify-write de un booleano.
+// pisar el objeto de estado completo, y lo hace con compare-and-swap sobre
+// el etag del blob. Un simple read-modify-write no alcanza: cada POST corre
+// en una invocación de función separada, así que varios clicks casi
+// simultáneos (mismo usuario marcando varias filas rápido, o dos personas a
+// la vez) generan lecturas concurrentes de `orders/<id>/state` que todavía
+// no vieron el write de las otras — sin CAS, la última en escribir pisa
+// todo lo que las demás acababan de guardar. Con `onlyIfMatch`, si otra
+// request ya movió el etag, el write falla (`modified: false`) y se
+// reintenta con los datos frescos, así que ningún cambio se pierde.
 async function postState(store, id, req) {
   const items = await store.get(`orders/${id}/items`, { type: "json" });
   if (!items) return json({ error: "Order not found" }, 404);
@@ -254,13 +258,28 @@ async function postState(store, id, req) {
     return json({ error: "Invalid state patch shape" }, 400);
   }
 
-  const current = (await store.get(`orders/${id}/state`, { type: "json" })) || {};
-  const row = current[body.itemId] || { sebastian: false, ignacio: false, diego: false };
-  row[body.person] = body.checked;
-  current[body.itemId] = row;
+  const key = `orders/${id}/state`;
+  const MAX_ATTEMPTS = 10;
 
-  await store.setJSON(`orders/${id}/state`, current);
-  return json({ ok: true, state: current });
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const current = await store.getWithMetadata(key, { type: "json" });
+    const state = (current && current.data) || {};
+    const etag = current && current.etag;
+
+    const row = { ...(state[body.itemId] || { sebastian: false, ignacio: false, diego: false }) };
+    row[body.person] = body.checked;
+    const nextState = { ...state, [body.itemId]: row };
+
+    const writeOpts = etag ? { onlyIfMatch: etag } : { onlyIfNew: true };
+    const result = await store.setJSON(key, nextState, writeOpts);
+    if (result && result.modified) {
+      return json({ ok: true, state: nextState });
+    }
+    // Otra request ganó la carrera y escribió justo antes: reintenta con
+    // el estado más fresco en vez de perder este cambio.
+  }
+
+  return json({ error: "No se pudo guardar por demasiada contención, reintenta." }, 409);
 }
 
 export default async (req, context) => {

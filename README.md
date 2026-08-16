@@ -98,31 +98,31 @@ misma selección en tiempo real.
 
 - Cada casilla se guarda **individualmente**: al tocar un checkbox, el
   cliente manda `POST /api/orders/:id/state` con solo esa celda
-  (`{itemId, person, checked}`), no el grid completo. El servidor hace un
-  read-modify-write acotado a esa única celda.
-- Esto es deliberado: antes el cliente mandaba el grid completo en cada
-  guardado, así que si la copia local de alguien estaba un poco
-  desactualizada (por el polling de 5s, o por su propio guardado anterior
-  todavía en curso), su próximo click resucitaba/borraba marcas de otra
-  persona al pisar el documento entero con su snapshot viejo — eso era lo
-  que causaba que, al marcar varios productos seguidos, algunos se
-  destildaran solos o quedaran desfasados. Acotar cada guardado a una sola
-  celda reduce la ventana de conflicto a "dos personas tocando exactamente
-  la misma celda en el mismo instante", un caso mucho más raro y de impacto
-  mínimo (se resuelve solo en el siguiente guardado/polling).
-- El cliente lleva un registro de qué celdas tienen un cambio local sin
-  confirmar todavía (`pendingCells`/`inFlightCells` en `pedido.html`). El
-  polling (`GET` cada 5s) actualiza la vista celda por celda con lo que
+  (`{itemId, person, checked}`), no el grid completo.
+- El servidor escribe esa celda con **compare-and-swap** sobre el etag del
+  blob (`onlyIfMatch`/`onlyIfNew` de `@netlify/blobs`, ver `postState` en
+  `netlify/functions/orders.mjs`), reintentando el ciclo lectura→
+  modificación→escritura-condicional hasta 10 veces si otra request le gana
+  la carrera. Esto importaba porque cada `POST` corre en una invocación de
+  función separada: si alguien marca varios productos seguidos, el
+  navegador dispara varios `POST` casi al mismo tiempo, y esas invocaciones
+  pueden leer el blob de forma concurrente antes de que ninguna haya
+  escrito — un simple read-modify-write (sin CAS) hacía que la última en
+  terminar pisara con una copia vieja lo que las otras acababan de guardar,
+  y eso era lo que causaba que, al marcar varios productos seguidos, varios
+  quedaran destildados o desfasados. Con CAS, si el etag ya cambió cuando
+  una invocación intenta escribir, reintenta con los datos frescos en vez
+  de perder el cambio de otra.
+- El cliente además lleva un registro de qué celdas tienen un cambio local
+  sin confirmar todavía (`pendingCells`/`inFlightCells` en `pedido.html`).
+  El polling (`GET` cada 5s) actualiza la vista celda por celda con lo que
   diga el servidor, pero **nunca pisa una celda que tenga un cambio local
   pendiente de confirmar** — así, aunque la respuesta del servidor tarde,
   no se revierte visualmente lo que la persona acaba de marcar.
-- Si un `POST` de una celda falla (por ejemplo, sin conexión), esa celda
-  queda marcada como pendiente y se reintenta sola en el siguiente ciclo de
+- Si un `POST` de una celda falla (por ejemplo, sin conexión, o los 10
+  reintentos de CAS agotados por contención extrema), esa celda queda
+  marcada como pendiente y se reintenta sola en el siguiente ciclo de
   polling, sin afectar al resto del grid.
-- **Limitación conocida:** sigue sin haber resolución de conflictos para el
-  caso exacto de que dos personas marquen la *misma* celda casi al mismo
-  milisegundo — ahí gana el último `POST` que llegue (last-write-wins), pero
-  acotado a esa celda puntual, nunca al resto de la selección.
 
 ## Cargar un pedido por foto
 
