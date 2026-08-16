@@ -284,7 +284,15 @@ async function postState(store, id, req) {
 
 export default async (req, context) => {
   try {
-    const store = getStore(STORE_NAME);
+    // Por defecto, las lecturas de Netlify Blobs son eventualmente
+    // consistentes (cacheadas en el edge, hasta 60s para propagar). Eso
+    // rompía el compare-and-swap de postState: una invocación podía leer
+    // un etag/valor todavía no actualizado y su escritura condicional
+    // terminaba "ganando" igual, pisando un cambio más nuevo de otra
+    // invocación concurrente. Con consistency:"strong" todas las lecturas
+    // de este store van directo a la fuente autoritativa, así el
+    // onlyIfMatch de postState sí detecta cualquier escritura concurrente.
+    const store = getStore({ name: STORE_NAME, consistency: "strong" });
     const { id, sub } = parsePath(req, context);
 
     if (!id) {
