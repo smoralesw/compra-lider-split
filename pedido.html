@@ -218,17 +218,23 @@ let items = [];
 let state = {};
 
 // Celdas (item x persona) con un cambio local que el servidor todavía no
-// confirmó, y celdas con una request en curso ahora mismo. El polling nunca
-// pisa una celda que esté en cualquiera de estos dos sets, para no revertir
-// un check recién hecho con una respuesta del servidor que todavía no lo vio.
+// confirmó (en cola para mandarse, o mandándose ahora mismo). El polling
+// nunca pisa una celda que esté acá, para no revertir un check recién hecho
+// con una respuesta del servidor que todavía no lo vio.
+//
+// Netlify Blobs no ofrece un mecanismo real de control de concurrencia (ni
+// siquiera con escrituras condicionales por etag: bajo requests realmente
+// simultáneas al mismo blob, confirmado a mano contra producción, se pueden
+// perder escrituras igual). La única forma confiable de evitar esa carrera
+// es no mandar nunca más de un guardado en vuelo a la vez desde acá: en vez
+// de disparar un POST por cada click, los cambios se encolan y un solo
+// "worker" los manda de a uno, en orden, esperando la respuesta de cada uno
+// antes de mandar el siguiente.
 const pendingCells = {};
-const inFlightCells = {};
+let queueRunning = false;
 
 function isPending(rowid, person){
   return !!(pendingCells[rowid] && pendingCells[rowid].has(person));
-}
-function isInFlight(rowid, person){
-  return !!(inFlightCells[rowid] && inFlightCells[rowid].has(person));
 }
 function addPending(rowid, person){
   if(!pendingCells[rowid]) pendingCells[rowid] = new Set();
@@ -237,16 +243,17 @@ function addPending(rowid, person){
 function removePending(rowid, person){
   if(pendingCells[rowid]) pendingCells[rowid].delete(person);
 }
-function addInFlight(rowid, person){
-  if(!inFlightCells[rowid]) inFlightCells[rowid] = new Set();
-  inFlightCells[rowid].add(person);
-}
-function removeInFlight(rowid, person){
-  if(inFlightCells[rowid]) inFlightCells[rowid].delete(person);
+function pickNextPending(){
+  for(const rowid of Object.keys(pendingCells)){
+    const set = pendingCells[rowid];
+    if(set){
+      for(const person of set) return {rowid, person};
+    }
+  }
+  return null;
 }
 function clearSyncTracking(){
   Object.keys(pendingCells).forEach(k => delete pendingCells[k]);
-  Object.keys(inFlightCells).forEach(k => delete inFlightCells[k]);
 }
 
 function fmt(n){
@@ -278,12 +285,9 @@ async function fetchRemoteState(){
 }
 
 // Manda el valor actual de UNA celda (item x persona), nunca el grid
-// completo. Así, si dos personas marcan cosas distintas casi al mismo
-// tiempo, cada POST solo puede pisar esa misma celda puntual — no el
-// trabajo de la otra persona en otras filas/columnas.
-async function sendCell(rowid, person){
-  if(isInFlight(rowid, person)) return; // ya hay una request en curso para esta celda
-  addInFlight(rowid, person);
+// completo. Solo lo llama el worker de la cola (runQueue), nunca
+// directamente, para garantizar que jamás hay dos POST en vuelo a la vez.
+async function sendCellOnce(rowid, person){
   const checked = !!(state[rowid] && state[rowid][person]);
   setSyncStatus("Guardando...");
   try{
@@ -295,28 +299,37 @@ async function sendCell(rowid, person){
     if(!res.ok) throw new Error("HTTP " + res.status);
     removePending(rowid, person);
     setSyncStatus("Guardado ✓ · sincronizado con Ignacio y Diego");
+    return true;
   }catch(e){
     setSyncStatus("No se pudo guardar (revisa la conexión) — reintentando...");
+    return false;
+  }
+}
+
+// Worker único: vacía la cola de a una celda por vez, esperando cada
+// respuesta antes de mandar la siguiente. Si ya hay un worker corriendo, no
+// arranca otro — ese mismo worker ya va a llegar a la celda recién agregada.
+async function runQueue(){
+  if(queueRunning) return;
+  queueRunning = true;
+  try{
+    let next;
+    while((next = pickNextPending())){
+      const ok = await sendCellOnce(next.rowid, next.person);
+      if(!ok) break; // reintenta en el próximo ciclo de polling, no en caliente
+    }
   }finally{
-    removeInFlight(rowid, person);
-    // Si mientras esta request estaba en vuelo el usuario volvió a tocar la
-    // misma celda, el valor más reciente ya vive en `state`; reintentamos
-    // para que el servidor termine reflejando ese último valor.
-    if(isPending(rowid, person)) sendCell(rowid, person);
+    queueRunning = false;
   }
 }
 
 function markCellChanged(rowid, person){
   addPending(rowid, person);
-  sendCell(rowid, person);
+  runQueue();
 }
 
 function retryPendingCells(){
-  Object.keys(pendingCells).forEach(rowid => {
-    pendingCells[rowid].forEach(person => {
-      if(!isInFlight(rowid, person)) sendCell(rowid, person);
-    });
-  });
+  runQueue();
 }
 
 async function pollState(){
@@ -327,7 +340,7 @@ async function pollState(){
     let changed = false;
     items.forEach(item => {
       PEOPLE.forEach(person => {
-        if(isPending(item.id, person) || isInFlight(item.id, person)) return;
+        if(isPending(item.id, person)) return;
         const remoteVal = !!(remote[item.id] && remote[item.id][person]);
         const localVal = !!(state[item.id] && state[item.id][person]);
         if(remoteVal !== localVal){
